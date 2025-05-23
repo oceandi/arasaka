@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="upload-section">
+    <form action="{{ url_for('upload_excel') }}" method="post" enctype="multipart/form-data">
+        <div class="custom-file">
+            <input type="file" class="custom-file-input" name="excel_file" accept=".xlsx, .xls">
+            <label class="custom-file-label">Excel Dosyası Seç</label>
+        </div>
+        <button type="submit" class="btn btn-success mt-3">Yükle</button>
+    </form>
+</div>
+
+<div class="mt-5">
+    <h3>Son Kayıtlar</h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Bülten No</th>
+                <th>Hafta</th>
+                <th>Koordinat A</th>
+                <th>Koordinat B</th>
+                <th>İşlem</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ariza in arizalar %}
+            <tr>
+                <td>{{ ariza.bulten_no }}</td>
+                <td>{{ ariza.hafta }}</td>
+                <td>{{ ariza.kordinat_a }}</td>
+                <td>{{ ariza.kordinat_b }}</td>
+                <td>
+                    <a href="{{ url_for('edit_ariza', id=ariza.id) }}" 
+                       class="btn btn-sm btn-warning">Düzenle</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Kayıt Düzenle: {{ ariza.bulten_no }}</h2>
+<form method="POST">
+    <div class="form-group">
+        <label>Koordinat A</label>
+        <input type="text" class="form-control" name="kordinat_a" value="{{ ariza.kordinat_a }}">
+    </div>
+    
+    <div class="form-group">
+        <label>Koordinat B</label>
+        <input type="text" class="form-control" name="kordinat_b" value="{{ ariza.kordinat_b }}">
+    </div>
+    
+    <!-- Diğer alanlar için benzer yapı -->
+    
+    <button type="submit" class="btn btn-primary">Kaydet</button>
+</form>
+{% endblock %}

@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiber Network Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #1e3a8a;
+            --secondary-color: #2563eb;
+            --accent-color: #3b82f6;
+            --text-color: #f8fafc;
+            --menu-bg: #0f172a;
+            --content-bg: #1e293b;
+            --card-bg: #334155;
+            --border-color: #475569;
+            --success-color: #22c55e;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #06b6d4;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--content-bg);
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            width: 240px;
+            background-color: var(--menu-bg);
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .logo {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        
+        .logo h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+        
+        .logo .subtitle {
+            font-size: 12px;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .menu {
+            flex: 1;
+        }
+        
+        .menu ul {
+            list-style: none;
+        }
+        
+        .menu li {
+            margin-bottom: 5px;
+        }
+        
+        .menu a {
+            display: flex;
+            align-items: center;
+            color: var(--text-color);
+            text-decoration: none;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        
+        .menu a:hover, .menu a.active {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid var(--accent-color);
+        }
+        
+        .menu a i {
+            margin-right: 10px;
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        
+        .header h2 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-info span {
+            margin-right: 10px;
+            font-size: 14px;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-card .icon {
+            font-size: 30px;
+            margin-right: 15px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+        }
+        
+        .stat-card.primary .icon {
+            background-color: rgba(37, 99, 235, 0.2);
+            color: var(--accent-color);
+        }
+        
+        .stat-card.warning .icon {
+            background-color: rgba(245, 158, 11, 0.2);
+            color: var(--warning-color);
+        }
+        
+        .stat-card.success .icon {
+            background-color: rgba(34, 197, 94, 0.2);
+            color: var(--success-color);
+        }
+        
+        .stat-card.danger .icon {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: var(--danger-color);
+        }
+        
+        .stat-card .info {
+            flex: 1;
+        }
+        
+        .stat-card .info h3 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .info p {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .chart-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chart-card h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .chart-wrapper {
+            height: 250px;
+        }
+        
+        .data-table {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .data-table h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .data-table h3 .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .data-table h3 button {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .data-table h3 button:hover {
+            background-color: var(--primary-color);
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        
+        thead th {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 12px 15px;
+            font-size: 14px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        tbody td {
+            padding: 12px 15px;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .action-cell {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-cell button {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        
+        .action-cell button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .action-cell button.edit {
+            color: var(--info-color);
+        }
+        
+        .action-cell button.delete {
+            color: var(--danger-color);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            overflow: auto;
+        }
+        
+        .modal-content {
+            background-color: var(--content-bg);
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 800px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            color: var(--text-color);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .modal-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .close {
+            color: var(--text-color);
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: var(--accent-color);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            font-size: 14px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .form-actions button {
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-color);
+        }
+        
+        .btn-secondary {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+        
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .import-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .import-area:hover {
+            border-color: var(--accent-color);
+        }
+
+        .import-area i {
+            font-size: 48px;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+        }
+
+        .import-area h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .import-area p {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .status-message {
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .status-message.success {
+            background-color: rgba(34, 197, 94, 0.2);
+            color: var(--success-color);
+            border: 1px solid var(--success-color);
+        }
+
+        .status-message.error {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-ok {
+            background-color: rgba(34, 197, 94, 0.2);
+            color: var(--success-color);
+        }
+
+        .status-warning {
+            background-color: rgba(245, 158, 11, 0.2);
+            color: var(--warning-color);
+        }
+
+        .status-error {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: var(--danger-color);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: flex-end;
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .pagination button.active {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        /* File input styling */
+        #fileInput {
+            position: absolute;
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            z-index: -1;
+        }
+        
+        #detail-modal .form-container {
+            max-height: 60vh;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        #detail-modal .form-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #detail-modal .form-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+        }
+        
+        #detail-modal .form-container::-webkit-scrollbar-thumb {
+            background-color: var(--border-color);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="logo">
+                <h1>AIRFOD</h1>
+                <div class="subtitle">Network Dashboard v1</div>
+            </div>
+            <div class="menu">
+                <ul>
+                    <li><a href="#" class="active"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                    <li><a href="#"><i class="fas fa-network-wired"></i> Fiber Arızalar</a></li>
+                    <li><a href="#"><i class="fas fa-map-marked-alt"></i> FS Rollout</a></li>
+                    <li><a href="#"><i class="fas fa-users"></i> Bireysel Rollout</a></li>
+                    <li><a href="#"><i class="fas fa-tools"></i> Deplase / Islah</a></li>
+                    <li><a href="#"><i class="fas fa-list-alt"></i> Fiber Kalite</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="content">
+            <div class="header">
+                <h2>Fiber Arıza Özeti</h2>
+                <div class="user-info">
+                    <span>Son güncelleme: <span id="lastUpdate">21.05.2025 09:45:28</span></span>
+                </div>
+            </div>
+            
+            <div class="status-message" id="statusMessage"></div>
+            
+            <div class="import-area" id="importArea">
+                <i class="fas fa-file-excel"></i>
+                <h3>Excel Dosyası Yükle</h3>
+                <p>Excel dosyanızı buraya sürükleyin veya dosya seçmek için tıklayın</p>
+                <input type="file" id="fileInput" accept=".xlsx, .xls, .csv">
+            </div>
+            
+            <div class="dashboard">
+                <div class="stat-card primary">
+                    <div class="icon">
+                        <i class="fas fa-network-wired"></i>
+                    </div>
+                    <div class="info">
+                        <h3 id="totalCount">0</h3>
+                        <p>Toplam Fiber Arıza Sayısı</p>
+                    </div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="info">
+                        <h3 id="hagsCount">0</h3>
+                        <p>HAGS Aşan Arıza Sayısı</p>
+                    </div>
+                </div>
+                <div class="stat-card success">
+                    <div class="icon">
+                        <i class="fas fa-users-cog"></i>
+                    </div>
+                    <div class="info">
+                        <h3 id="serviceCount">0</h3>
+                        <p>Servis Etkili Arıza Sayısı</p>
+                    </div>
+                </div>
+                <div class="stat-card danger">
+                    <div class="icon">
+                        <i class="fas fa-city"></i>
+                    </div>
+                    <div class="info">
+                        <h3 id="cityCount">0</h3>
+                        <p>Şehir İçi Arıza Sayısı</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3>2025 Bölgesel Arıza Dağılımı</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="regionChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>Önceki Yıllara Göre Arıza Trendleri</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="data-table">
+                <h3>
+                    Fiber Arıza Listesi
+                    <div class="action-buttons">
+                        <button id="addNewBtn"><i class="fas fa-plus"></i> Yeni Ekle</button>
+                        <button id="exportExcelBtn"><i class="fas fa-file-export"></i> Dışa Aktar</button>
+                    </div>
+                </h3>
+                <div class="table-wrapper">
+                    <table id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>Hafta</th>
+                                <th>Bölge</th>
+                                <th>Bülten Numarası</th>
+                                <th>İL</th>
+                                <th>Güzergah</th>
+                                <th>KORDİNAT A</th>
+                                <th>KORDİNAT B</th>
+                                <th>Arıza Başlangıç</th>
+                                <th>Arıza Bitiş</th>
+                                <th>Kablo Tipi</th>
+                                <th>Kök Neden</th>
+                                <th>HAGS</th>
+                                <th>Servis Etkisi</th>
+                                <th>Arıza Süresi</th>
+                                <th>Kalıcı Çözüm</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Table data will be populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="pagination">
+                    <!-- Pagination will be populated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add New / Edit Modal -->
+    <div id="detail-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Fiber Arıza Detay</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="form-container">
+                <form id="detailForm">
+                    <input type="hidden" id="rowId">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="hafta">Hafta</label>
+                            <input type="text" id="hafta" name="hafta" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="bolge">Bölge</label>
+                            <input type="text" id="bolge" name="bolge" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="bultenNo">Bülten Numarası</label>
+                            <input type="text" id="bultenNo" name="bultenNo" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="il">İL</label>
+                            <input type="text" id="il" name="il" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="guzergah">Güzergah</label>
+                            <input type="text" id="guzergah" name="guzergah" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="kordinatA">KORDİNAT A</label>
+                            <input type="text" id="kordinatA" name="kordinatA">
+                        </div>
+                        <div class="form-group">
+                            <label for="kordinatB">KORDİNAT B</label>
+                            <input type="text" id="kordinatB" name="kordinatB">
+                        </div>
+                        <div class="form-group">
+                            <label for="servisEtkisi">SERİVS ETKİSİ</label>
+                            <select id="servisEtkisi" name="servisEtkisi">
+                                <option value="VAR">VAR</option>
+                                <option value="YOK">YOK</option>
+                                <option value="N/A">N/A</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="lokasyon">Lokasyon</label>
+                            <input type="text" id="lokasyon" name="lokasyon" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="arizaBaslangic">Arıza Başlangıç</label>
+                            <input type="datetime-local" id="arizaBaslangic" name="arizaBaslangic" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="arizaBitis">Arıza Bitiş</label>
+                            <input type="datetime-local" id="arizaBitis" name="arizaBitis" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="kabloTipi">KABLO TIPI</label>
+                            <input type="text" id="kabloTipi" name="kabloTipi">
+                        </div>
+                        <div class="form-group">
+                            <label for="hagsSuresi">HAGS SURESI</label>
+                            <input type="text" id="hagsSuresi" name="hagsSuresi">
+                        </div>
+                        <div class="form-group">
+                            <label for="kesintiSuresi">KESINTI SÜRESİ</label>
+                            <input type="text" id="kesintiSuresi" name="kesintiSuresi">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="arizaKonsolide">Arıza Konsolide Kök Neden</label>
+                            <input type="text" id="arizaKonsolide" name="arizaKonsolide" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="arizaKokNeden">Arıza Kök Neden</label>
+                            <input type="text" id="arizaKokNeden" name="arizaKokNeden" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="hagsAsildi">HAGS Aşıldı mı</label>
+                            <select id="hagsAsildi" name="hagsAsildi">
+                                <option value="Evet">Evet</option>
+                                <option value="Hayır">Hayır</option>
+                                <option value="N/A">N/A</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="refakatDurumu">Refakat Durumu</label>
+                            <select id="refakatDurumu" name="refakatDurumu">
+                                <option value="Evet">Evet</option>
+                                <option value="Hayır">Hayır</option>
+                                <option value="N/A">N/A</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="servisEtkiDurum">Servis Etkisi</label>
+                            <select id="servisEtkiDurum" name="servisEtkiDurum">
+                                <option value="VAR">VAR</option>
+                                <option value="YOK">YOK</option>
+                                <option value="N/A">N/A</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="arizaSuresi">Arıza Süresi</label>
+                            <input type="text" id="arizaSuresi" name="arizaSuresi" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="kaliciCozum">KALICI ÇÖZÜM SAĞLANDI</label>
+                            <select id="kaliciCozum" name="kaliciCozum">
+                                <option value="Evet">Evet</option>
+                                <option value="Hayır">Hayır</option>
+                                <option value="N/A">N/A</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="kullanilanMalzeme">KULLANILAN MALZEME</label>
+                            <input type="text" id="kullanilanMalzeme" name="kullanilanMalzeme">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="aciklama">AÇIKLAMA</label>
+                        <textarea id="aciklama" name="aciklama" rows="3"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelBtn">İptal</button>
+                        <button type="button" class="btn-primary" id="saveBtn">Kaydet</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Sample data for demonstration
+        let sampleData = [
+            {
+                id: 1,
+                hafta: "W02", 
+                bolge: "BURSA", 
+                bultenNo: "10099810779", 
+                il: "CANAKKALE", 
+                guzergah: "CANAKKALE MERKEZ - CANAKKALE EZINE",
+                kordinatA: "", 
+                kordinatB: "", 
+                servisEtkisi: "YOK",
+                lokasyon: "Şehirler arası", 
+                arizaBaslangic: "2025-01-06T12:20:00", 
+                arizaBitis: "2025-01-06T18:37:00",
+                kabloTipi: "",
+                hagsSuresi: "",
+                kesintiSuresi: "",
+                arizaKonsolide: "Özel Kurum Çalışması", 
+                arizaKokNeden: "Doğalgaz Firması Çalışması", 
+                hagsAsildi: "Evet", 
+                refakatDurumu: "Hayır", 
+                servisEtkiDurum: "YOK", 
+                arizaSuresi: "06:17",
+                kaliciCozum: "Evet",
+                kullanilanMalzeme: "",
+                aciklama: ""
+            },
+            {
+                id: 2,
+                hafta: "W02", 
+                bolge: "BURSA", 
+                bultenNo: "10099825178", 
+                il: "BURSA", 
+                guzergah: "BURSA YILDIRIM - BURSA OSMANGAZI",
+                kordinatA: "", 
+                kordinatB: "", 
+                servisEtkisi: "YOK",
+                lokasyon: "Şehir içi", 
+                arizaBaslangic: "2025-01-06T16:35:00", 
+                arizaBitis: "2025-01-06T22:59:00",
+                kabloTipi: "",
+                hagsSuresi: "",
+                kesintiSuresi: "",
+                arizaKonsolide: "Sabotaj", 
+                arizaKokNeden: "Sabotaj", 
+                hagsAsildi: "Evet", 
+                refakatDurumu: "Hayır", 
+                servisEtkiDurum: "YOK", 
+                arizaSuresi: "06:24",
+                kaliciCozum: "Evet",
+                kullanilanMalzeme: "",
+                aciklama: ""
+            },
+            {
+                id: 3,
+                hafta: "W19", 
+                bolge: "BURSA", 
+                bultenNo: "10105742802", 
+                il: "BURSA", 
+                guzergah: "BURSA KARACABEY - BALIKESIR KARESI",
+                kordinatA: "", 
+                kordinatB: "", 
+                servisEtkisi: "VAR",
+                lokasyon: "Şehirler arası", 
+                arizaBaslangic: "2025-05-08T14:25:00", 
+                arizaBitis: "2025-05-08T16:13:00",
+                kabloTipi: "",
+                hagsSuresi: "",
+                kesintiSuresi: "",
+                arizaKonsolide: "Resmi Kurum Kazı Çalışması", 
+                arizaKokNeden: "TC Karayolları Çalışması", 
+                hagsAsildi: "N/A", 
+                refakatDurumu: "N/A", 
+                servisEtkiDurum: "VAR", 
+                arizaSuresi: "01:48",
+                kaliciCozum: "Evet",
+                kullanilanMalzeme: "",
+                aciklama: ""
+            }
+        ];
+        
+        // Current page for pagination
+        let currentPage = 1;
+        const rowsPerPage = 10;
+        
+        // Initialize the application when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the dashboard
+            updateDashboardStats();
+            renderCharts();
+            renderTable();
+            setupEventListeners();
+        });
+        
+        // Set up all event listeners
+        function setupEventListeners() {
+            // File import area
+            const importArea = document.getElementById('importArea');
+            const fileInput = document.getElementById('fileInput');
+            
+            importArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            importArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                importArea.style.borderColor = '#3b82f6';
+            });
+            
+            importArea.addEventListener('dragleave', () => {
+                importArea.style.borderColor = '#475569';
+            });
+            
+            importArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                importArea.style.borderColor = '#475569';
+                
+                if (e.dataTransfer.files.length) {
+                    handleFileImport(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleFileImport(e.target.files[0]);
+                }
+            });
+            
+            // Add new button
+            document.getElementById('addNewBtn').addEventListener('click', openAddModal);
+            
+            // Export Excel button
+            document.getElementById('exportExcelBtn').addEventListener('click', exportToExcel);
+            
+            // Modal close button
+            document.querySelector('.close').addEventListener('click', closeModal);
+            
+            // Cancel button in modal
+            document.getElementById('cancelBtn').addEventListener('click', closeModal);
+            
+            // Save button in modal
+            document.getElementById('saveBtn').addEventListener('click', saveRecord);
+        }
+        
+        // Update dashboard statistics
+        function updateDashboardStats() {
+            document.getElementById('totalCount').textContent = sampleData.length;
+            
+            const hagsCount = sampleData.filter(item => item.hagsAsildi === 'Evet').length;
+            document.getElementById('hagsCount').textContent = hagsCount;
+            
+            const serviceCount = sampleData.filter(item => item.servisEtkiDurum === 'VAR').length;
+            document.getElementById('serviceCount').textContent = serviceCount;
+            
+            const cityCount = sampleData.filter(item => item.lokasyon === 'Şehir içi').length;
+            document.getElementById('cityCount').textContent = cityCount;
+            
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleString('tr-TR');
+        }
+        
+        // Render charts
+        function renderCharts() {
+            // Regional distribution chart
+            const regionCtx = document.getElementById('regionChart').getContext('2d');
+            const regionData = {
+                labels: ['ASYA', 'AVRUPA', 'BURSA', 'İZMİR', 'KOCAELİ', 'MUĞLA'],
+                datasets: [{
+                    label: 'Arıza Sayısı',
+                    data: [84, 267, 76, 47, 38, 22],
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.7)', 
+                        'rgba(34, 197, 94, 0.7)',
+                        'rgba(245, 158, 11, 0.7)',
+                        'rgba(239, 68, 68, 0.7)',
+                        'rgba(168, 85, 247, 0.7)',
+                        'rgba(14, 165, 233, 0.7)'
+                    ],
+                    borderWidth: 0
+                }]
+            };
+            
+            new Chart(regionCtx, {
+                type: 'bar',
+                data: regionData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#94a3b8'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+            
+            // Trend chart
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            const trendData = {
+                labels: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
+                datasets: [
+                    {
+                        label: '2021',
+                        data: [110, 105, 118, 120, 115, 125, 122, 118, 128, 125, 130, 120],
+                        borderColor: '#f59e0b',
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#f59e0b'
+                    },
+                    {
+                        label: '2022',
+                        data: [95, 85, 80, 95, 90, 85, 80, 75, 85, 90, 88, 85],
+                        borderColor: '#3b82f6',
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#3b82f6'
+                    },
+                    {
+                        label: '2023',
+                        data: [45, 50, 48, 52, 46, 48, 50, 48, 50, 52, 48, 45],
+                        borderColor: '#ef4444',
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#ef4444'
+                    },
+                    {
+                        label: '2024',
+                        data: [28, 30, 32, 29, 31, 28, 30, 32, 29, 33, 30, 31],
+                        borderColor: '#22c55e',
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#22c55e'
+                    },
+                    {
+                        label: '2025',
+                        data: [20, 18, 22, 19, 21, 18, 20, 17, 19, 22, 20, 18],
+                        borderColor: '#a855f7',
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#a855f7'
+                    }
+                ]
+            };
+            
+            new Chart(trendCtx, {
+                type: 'line',
+                data: trendData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#94a3b8'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                boxWidth: 12,
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                color: '#94a3b8'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Render data table
+        function renderTable() {
+            const table = document.getElementById('dataTable');
+            const tbody = table.querySelector('tbody');
+            tbody.innerHTML = '';
+            
+            // Calculate pagination
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const paginatedData = sampleData.slice(start, end);
+            
+            paginatedData.forEach(item => {
+                const tr = document.createElement('tr');
+                
+                // Format dates for display
+                const startDate = new Date(item.arizaBaslangic).toLocaleString('tr-TR');
+                const endDate = new Date(item.arizaBitis).toLocaleString('tr-TR');
+                
+                tr.innerHTML = `
+                    <td>${item.hafta}</td>
+                    <td>${item.bolge}</td>
+                    <td>${item.bultenNo}</td>
+                    <td>${item.il}</td>
+                    <td>${item.guzergah}</td>
+                    <td>${item.kordinatA}</td>
+                    <td>${item.kordinatB}</td>
+                    <td>${startDate}</td>
+                    <td>${endDate}</td>
+                    <td>${item.kabloTipi}</td>
+                    <td>${item.arizaKokNeden}</td>
+                    <td><span class="status-badge ${item.hagsAsildi === 'Evet' ? 'status-warning' : 'status-ok'}">${item.hagsAsildi}</span></td>
+                    <td><span class="status-badge ${item.servisEtkiDurum === 'VAR' ? 'status-error' : 'status-ok'}">${item.servisEtkiDurum}</span></td>
+                    <td>${item.arizaSuresi}</td>
+                    <td>${item.kaliciCozum}</td>
+                    <td class="action-cell">
+                        <button class="edit" onclick="editRecord(${item.id})"><i class="fas fa-edit"></i></button>
+                        <button class="delete" onclick="deleteRecord(${item.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                
+                tbody.appendChild(tr);
+            });
+            
+            // Render pagination
+            renderPagination();
+        }
+        
+        // Render pagination controls
+        function renderPagination() {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+            
+            const totalPages = Math.ceil(sampleData.length / rowsPerPage);
+            
+            // Previous button
+            const prevBtn = document.createElement('button');
+            prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderTable();
+                }
+            });
+            pagination.appendChild(prevBtn);
+            
+            // Page buttons
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, startPage + 4);
+            
+            if (endPage - startPage < 4 && startPage > 1) {
+                startPage = Math.max(1, endPage - 4);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.textContent = i;
+                pageBtn.className = i === currentPage ? 'active' : '';
+                pageBtn.addEventListener('click', () => {
+                    currentPage = i;
+                    renderTable();
+                });
+                pagination.appendChild(pageBtn);
+            }
+            
+            // Next button
+            const nextBtn = document.createElement('button');
+            nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderTable();
+                }
+            });
+            pagination.appendChild(nextBtn);
+        }
+        
+        // Handle file import
+        function handleFileImport(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                let data;
+                const filename = file.name.toLowerCase();
+                
+                try {
+                    if (filename.endsWith('.csv')) {
+                        // Parse CSV
+                        const csvData = e.target.result;
+                        data = parseCSV(csvData);
+                    } else {
+                        // Parse Excel
+                        const binaryData = e.target.result;
+                        const workbook = XLSX.read(binaryData, { type: 'binary' });
+                        const firstSheet = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheet];
+                        data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                        
+                        // Process header and convert to objects
+                        if (data.length > 0) {
+                            const headers = data[0];
+                            data = data.slice(1).map(row => {
+                                const obj = {};
+                                headers.forEach((header, i) => {
+                                    obj[header.trim()] = row[i] || '';
+                                });
+                                return obj;
+                            });
+                        }
+                    }
+                    
+                    processImportedData(data);
+                    showStatusMessage('success', `Excel başarıyla içe aktarıldı. ${data.length} kayıt işlendi.`);
+                } catch (error) {
+                    console.error('Import error:', error);
+                    showStatusMessage('error', 'Dosya içe aktarılırken hata oluştu: ' + error.message);
+                }
+            };
+            
+            if (file.name.toLowerCase().endsWith('.csv')) {
+                reader.readAsText(file);
+            } else {
+                reader.readAsBinaryString(file);
+            }
+        }
+        
+        // Parse CSV data
+        function parseCSV(csvText) {
+            return Papa.parse(csvText, {
+                header: true,
+                dynamicTyping: true,
+                skipEmptyLines: true,
+                trimHeaders: true
+            }).data;
+        }
+        
+        // Process imported data
+        function processImportedData(data) {
+            if (!data || !data.length) return;
+            
+            let newCount = 0;
+            let updateCount = 0;
+            let skippedCount = 0;
+            
+            data.forEach(row => {
+                // Skip empty rows
+                if (Object.values(row).every(val => !val)) return;
+                
+                // Find the relevant bulletin number column
+                let bultenNo = row['Bülten Numarası'] || row['Bulten Numarasi'] || row['BultenNumarasi'] || '';
+                
+                if (!bultenNo) {
+                    // Try to find a column that might contain the bulletin number
+                    for (const key in row) {
+                        if (key.toLowerCase().includes('bulten') || key.toLowerCase().includes('bülten')) {
+                            bultenNo = row[key];
+                            break;
+                        }
+                    }
+                }
+                
+                if (bultenNo) {
+                    // Check if this record already exists
+                    const existingIndex = sampleData.findIndex(item => item.bultenNo === String(bultenNo));
+                    
+                    if (existingIndex >= 0) {
+                        // Skip if already exists (we only want to add new records)
+                        skippedCount++;
+                        return;
+                    } else {
+                        // Add new record
+                        // Generate a new ID
+                        const newId = sampleData.length > 0 ? Math.max(...sampleData.map(item => item.id)) + 1 : 1;
+                        
+                        // Map the imported data to our data model
+                        const newRecord = mapImportedDataToModel(row, newId);
+                        
+                        // Add the record
+                        sampleData.push(newRecord);
+                        newCount++;
+                    }
+                }
+            });
+            
+            // Update the UI
+            updateDashboardStats();
+            renderTable();
+            
+            showStatusMessage('success', `Excel başarıyla içe aktarıldı. ${newCount} yeni kayıt eklendi, ${skippedCount} kayıt zaten mevcut olduğu için atlandı.`);
+        }
+        
+        // Map imported data to our data model
+        function mapImportedDataToModel(row, id) {
+            // Handle different column names for flexibility
+            const getValueForField = (fieldNames) => {
+                for (const name of fieldNames) {
+                    if (row[name] !== undefined) return row[name] || '';
+                }
+                return '';
+            };
+            
+            return {
+                id: id,
+                hafta: getValueForField(['Hafta']),
+                bolge: getValueForField(['Bölge', 'Bolge']),
+                bultenNo: String(getValueForField(['Bülten Numarası', 'Bulten Numarasi', 'BultenNumarasi'])),
+                il: getValueForField(['İL', 'IL', 'Il']),
+                guzergah: getValueForField(['Güzergah', 'Guzergah']),
+                kordinatA: '', // These will be filled manually
+                kordinatB: '', // These will be filled manually
+                servisEtkisi: 'YOK', // Default value
+                lokasyon: getValueForField(['Lokasyon']),
+                arizaBaslangic: formatDateForInput(getValueForField(['Arıza Başlangıç', 'Ariza Baslangic'])),
+                arizaBitis: formatDateForInput(getValueForField(['Arıza Bitiş', 'Ariza Bitis'])),
+                kabloTipi: '', // Will be filled manually
+                hagsSuresi: '', // Will be filled manually
+                kesintiSuresi: '', // Will be filled manually
+                arizaKonsolide: getValueForField(['Arıza Konsolide Kök Neden', 'Ariza Konsolide Kok Neden']),
+                arizaKokNeden: getValueForField(['Arıza Kök Neden', 'Ariza Kok Neden']),
+                hagsAsildi: getValueForField(['HAGS Aşıldı mı', 'Hags Asildi mi']) || 'N/A',
+                refakatDurumu: getValueForField(['Refakat Durumu', 'RefakatDurumu']) || 'N/A',
+                servisEtkiDurum: getValueForField(['Servis Etkisi', 'ServisEtkisi']) || 'YOK',
+                arizaSuresi: getValueForField(['Arıza Süresi', 'Ariza Suresi']),
+                kaliciCozum: 'Evet', // Default value
+                kullanilanMalzeme: '', // Will be filled manually
+                aciklama: '' // Will be filled manually
+            };
+        }
+        
+        // Format date for input fields
+        function formatDateForInput(dateStr) {
+            if (!dateStr) return '';
+            
+            try {
+                // Handle various date formats
+                let date;
+                
+                if (typeof dateStr === 'string') {
+                    // Check for different formats
+                    if (dateStr.includes('/')) {
+                        // Format: DD/MM/YYYY HH:mm:ss
+                        const parts = dateStr.split(' ');
+                        const dateParts = parts[0].split('/');
+                        const timeParts = parts[1] ? parts[1].split(':') : ['00', '00', '00'];
+                        
+                        date = new Date(
+                            parseInt(dateParts[2]),
+                            parseInt(dateParts[1]) - 1,
+                            parseInt(dateParts[0]),
+                            parseInt(timeParts[0]),
+                            parseInt(timeParts[1]),
+                            timeParts[2] ? parseInt(timeParts[2]) : 0
+                        );
+                    } else if (dateStr.includes('.')) {
+                        // Format: DD.MM.YYYY HH:mm:ss
+                        const parts = dateStr.split(' ');
+                        const dateParts = parts[0].split('.');
+                        const timeParts = parts[1] ? parts[1].split(':') : ['00', '00', '00'];
+                        
+                        date = new Date(
+                            parseInt(dateParts[2]),
+                            parseInt(dateParts[1]) - 1,
+                            parseInt(dateParts[0]),
+                            parseInt(timeParts[0]),
+                            parseInt(timeParts[1]),
+                            timeParts[2] ? parseInt(timeParts[2]) : 0
+                        );
+                    } else {
+                        // Try standard parsing
+                        date = new Date(dateStr);
+                    }
+                } else {
+                    // Handle Excel date numbers
+                    if (typeof dateStr === 'number') {
+                        // Excel dates are days since 1900-01-01
+                        const excelEpoch = new Date(1900, 0, 1);
+                        date = new Date(excelEpoch.getTime() + (dateStr - 1) * 24 * 60 * 60 * 1000);
+                    } else {
+                        date = new Date(dateStr);
+                    }
+                }
+                
+                // Check if date is valid
+                if (isNaN(date.getTime())) {
+                    return '';
+                }
+                
+                // Format for datetime-local input
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                
+                return `${year}-${month}-${day}T${hours}:${minutes}`;
+            } catch (e) {
+                console.error('Date format error:', e);
+                return '';
+            }
+        }
+        
+        // Show status message
+        function showStatusMessage(type, message) {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type}`;
+            statusMessage.style.display = 'block';
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Open modal for adding new record
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = 'Yeni Fiber Arıza Ekle';
+            document.getElementById('rowId').value = '';
+            document.getElementById('detailForm').reset();
+            
+            // Set default values
+            document.getElementById('bolge').value = 'BURSA';
+            document.getElementById('hafta').value = getCurrentWeek();
+            
+            openModal();
+        }
+        
+        // Get current week in format W##
+        function getCurrentWeek() {
+            const now = new Date();
+            const onejan = new Date(now.getFullYear(), 0, 1);
+            const week = Math.ceil((((now - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+            return `W${String(week).padStart(2, '0')}`;
+        }
+        
+        // Open modal for editing record
+        function editRecord(id) {
+            const record = sampleData.find(item => item.id === id);
+            if (!record) return;
+            
+            document.getElementById('modalTitle').textContent = 'Fiber Arıza Düzenle';
+            document.getElementById('rowId').value = record.id;
+            
+            // Fill form with record data
+            for (const key in record) {
+                const field = document.getElementById(key);
+                if (field) {
+                    field.value = record[key];
+                }
+            }
+            
+            openModal();
+        }
+        
+        // Open modal
+        function openModal() {
+            document.getElementById('detail-modal').style.display = 'block';
+        }
+        
+        // Close modal
+        function closeModal() {
+            document.getElementById('detail-modal').style.display = 'none';
+        }
+        
+        // Save record
+        function saveRecord() {
+            const form = document.getElementById('detailForm');
+            const rowId = document.getElementById('rowId').value;
+            
+            // Basic form validation
+            const requiredFields = ['hafta', 'bolge', 'bultenNo', 'il', 'guzergah', 'lokasyon', 'arizaBaslangic', 'arizaBitis'];
+            for (const field of requiredFields) {
+                const input = document.getElementById(field);
+                if (!input.value.trim()) {
+                    alert(`${input.previousElementSibling.textContent} alanı zorunludur.`);
+                    input.focus();
+                    return;
+                }
+            }
+            
+            // Gather form data
+            const formData = {
+                hafta: document.getElementById('hafta').value,
+                bolge: document.getElementById('bolge').value,
+                bultenNo: document.getElementById('bultenNo').value,
+                il: document.getElementById('il').value,
+                guzergah: document.getElementById('guzergah').value,
+                kordinatA: document.getElementById('kordinatA').value,
+                kordinatB: document.getElementById('kordinatB').value,
+                servisEtkisi: document.getElementById('servisEtkisi').value,
+                lokasyon: document.getElementById('lokasyon').value,
+                arizaBaslangic: document.getElementById('arizaBaslangic').value,
+                arizaBitis: document.getElementById('arizaBitis').value,
+                kabloTipi: document.getElementById('kabloTipi').value,
+                hagsSuresi: document.getElementById('hagsSuresi').value,
+                kesintiSuresi: document.getElementById('kesintiSuresi').value,
+                arizaKonsolide: document.getElementById('arizaKonsolide').value,
+                arizaKokNeden: document.getElementById('arizaKokNeden').value,
+                hagsAsildi: document.getElementById('hagsAsildi').value,
+                refakatDurumu: document.getElementById('refakatDurumu').value,
+                servisEtkiDurum: document.getElementById('servisEtkiDurum').value,
+                arizaSuresi: document.getElementById('arizaSuresi').value,
+                kaliciCozum: document.getElementById('kaliciCozum').value,
+                kullanilanMalzeme: document.getElementById('kullanilanMalzeme').value,
+                aciklama: document.getElementById('aciklama').value
+            };
+            
+            if (rowId) {
+                // Update existing record
+                const index = sampleData.findIndex(item => item.id === parseInt(rowId));
+                if (index >= 0) {
+                    sampleData[index] = { ...sampleData[index], ...formData };
+                }
+            } else {
+                // Add new record
+                const newId = sampleData.length > 0 ? Math.max(...sampleData.map(item => item.id)) + 1 : 1;
+                sampleData.push({ id: newId, ...formData });
+            }
+            
+            // Update UI
+            updateDashboardStats();
+            renderTable();
+            closeModal();
+        }
+        
+        // Delete record
+        function deleteRecord(id) {
+            if (confirm('Bu kaydı silmek istediğinizden emin misiniz?')) {
+                sampleData = sampleData.filter(item => item.id !== id);
+                updateDashboardStats();
+                renderTable();
+            }
+        }
+        
+        // Export data to Excel
+        function exportToExcel() {
+            // Prepare data for export
+            const exportData = sampleData.map(item => {
+                return {
+                    'Hafta': item.hafta,
+                    'Bölge': item.bolge,
+                    'Bülten Numarası': item.bultenNo,
+                    'İL': item.il,
+                    'Güzergah': item.guzergah,
+                    'KORDİNAT A': item.kordinatA,
+                    'KORDİNAT B': item.kordinatB,
+                    'Lokasyon': item.lokasyon,
+                    'Arıza Başlangıç': new Date(item.arizaBaslangic).toLocaleString('tr-TR'),
+                    'Arıza Bitiş': new Date(item.arizaBitis).toLocaleString('tr-TR'),
+                    'Kablo Tipi': item.kabloTipi,
+                    'HAGS Süresi': item.hagsSuresi,
+                    'Kesinti Süresi': item.kesintiSuresi,
+                    'Arıza Konsolide Kök Neden': item.arizaKonsolide,
+                    'Arıza Kök Neden': item.arizaKokNeden,
+                    'HAGS Aşıldı mı': item.hagsAsildi,
+                    'Refakat Durumu': item.refakatDurumu,
+                    'Servis Etkisi': item.servisEtkiDurum,
+                    'Arıza Süresi': item.arizaSuresi,
+                    'Kalıcı Çözüm Sağlandı': item.kaliciCozum,
+                    'Kullanılan Malzeme': item.kullanilanMalzeme,
+                    'Açıklama': item.aciklama
+                };
+            });
+            
+            // Create worksheet
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            
+            // Create workbook
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "FiberArızaRaporu");
+            
+            // Export to file
+            XLSX.writeFile(wb, `FiberArızaRaporu_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        }
+        
+        // Make functions available globally
+        window.editRecord = editRecord;
+        window.deleteRecord = deleteRecord;
+    </script>
+</body>
+</html>
