@@ -582,9 +582,20 @@
                 <i class="fas fa-file-excel"></i>
                 <h3>Excel Dosyası Yükle</h3>
                 <p>Excel dosyanızı buraya sürükleyin veya dosya seçmek için tıklayın</p>
-                <input type="file" id="fileInput" accept=".xlsx, .xls, .csv">
+                <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" style="display:none;">
             </div>
-            
+
+            <!-- Flash mesajları -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                <div class="mt-3">
+                  {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }}">{{ message }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+
             <div class="dashboard">
                 <div class="stat-card primary">
                     <div class="icon">
@@ -677,6 +688,9 @@
                 <div class="pagination" id="pagination">
                     <!-- Pagination will be populated by JS -->
                 </div>
+                <div class="mb-2">
+                    <b>Toplam Kayıt:</b> {{ total }}
+                </div>
             </div>
         </div>
     </div>
@@ -702,7 +716,7 @@
                         </div>
                         <div class="form-group">
                             <label for="bultenNo">Bülten Numarası</label>
-                            <input type="text" id="bultenNo" name="bultenNo" required>
+                            <input type="text" id="bultenNo" name="bultenNo" required readonly>
                         </div>
                     </div>
                     <div class="form-row">
@@ -724,108 +738,104 @@
                             <label for="kordinatB">KORDİNAT B</label>
                             <input type="text" id="kordinatB" name="kordinatB">
                         </div>
+                    </div>
+                    <div class="form-row">
                         <div class="form-group">
-                            <label for="servisEtkisi">SERİVS ETKİSİ</label>
-                            <select id="servisEtkisi" name="servisEtkisi">
-                                <option value="VAR">VAR</option>
-                                <option value="YOK">YOK</option>
-                                <option value="N/A">N/A</option>
+                            <label for="baslangicTarihi">Arıza Başlangıç</label>
+                            <input type="datetime-local" id="baslangicTarihi" name="baslangicTarihi">
+                        </div>
+                        <div class="form-group">
+                            <label for="bitisTarihi">Arıza Bitiş</label>
+                            <input type="datetime-local" id="bitisTarihi" name="bitisTarihi">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="kabloTipi">Kablo Tipi</label>
+                            <select id="kabloTipi" name="kabloTipi" required>
+                                <option value="">Seçiniz</option>
+                                <option value="ADSS">ADSS</option>
+                                <option value="Duct">Duct</option>
+                                <option value="Aerial">Aerial</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="kokNeden">Kök Neden</label>
+                            <select id="kokNeden" name="kokNeden" required>
+                                <option value="">Seçiniz</option>
+                                <option value="Doğal Afet">Doğal Afet</option>
+                                <option value="İnsan Kaynaklı">İnsan Kaynaklı</option>
+                                <option value="Diğer">Diğer</option>
                             </select>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="lokasyon">Lokasyon</label>
-                            <input type="text" id="lokasyon" name="lokasyon" required>
+                            <label for="hags">HAGS</label>
+                            <input type="text" id="hags" name="hags">
+                        </div>
+                        <div class="form-group">
+                            <label for="servisEtkisi">Servis Etkisi</label>
+                            <select id="servisEtkisi" name="servisEtkisi" required>
+                                <option value="">Seçiniz</option>
+                                <option value="Evet">Evet</option>
+                                <option value="Hayır">Hayır</option>
+                            </select>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="arizaBaslangic">Arıza Başlangıç</label>
-                            <input type="datetime-local" id="arizaBaslangic" name="arizaBaslangic" required>
+                            <label for="arizaSuresi">Arıza Süresi (saat)</label>
+                            <input type="number" id="arizaSuresi" name="arizaSuresi" required>
                         </div>
                         <div class="form-group">
-                            <label for="arizaBitis">Arıza Bitiş</label>
-                            <input type="datetime-local" id="arizaBitis" name="arizaBitis" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="kabloTipi">KABLO TIPI</label>
-                            <input type="text" id="kabloTipi" name="kabloTipi">
-                        </div>
-                        <div class="form-group">
-                            <label for="hagsSuresi">HAGS SURESI</label>
-                            <input type="text" id="hagsSuresi" name="hagsSuresi">
-                        </div>
-                        <div class="form-group">
-                            <label for="kesintiSuresi">KESINTI SÜRESİ</label>
-                            <input type="text" id="kesintiSuresi" name="kesintiSuresi">
+                            <label for="kaliciCozum">Kalıcı Çözüm Sağlandı</label>
+                            <input type="checkbox" id="kaliciCozum" name="kaliciCozum">
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="arizaKonsolide">Arıza Konsolide Kök Neden</label>
-                            <input type="text" id="arizaKonsolide" name="arizaKonsolide" required>
+                            <input type="text" id="arizaKonsolide" name="arizaKonsolide">
                         </div>
                         <div class="form-group">
-                            <label for="arizaKokNeden">Arıza Kök Neden</label>
-                            <input type="text" id="arizaKokNeden" name="arizaKokNeden" required>
+                            <label for="lokasyon">Lokasyon</label>
+                            <input type="text" id="lokasyon" name="lokasyon">
                         </div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group">
-                            <label for="hagsAsildi">HAGS Aşıldı mı</label>
-                            <select id="hagsAsildi" name="hagsAsildi">
-                                <option value="Evet">Evet</option>
-                                <option value="Hayır">Hayır</option>
-                                <option value="N/A">N/A</option>
-                            </select>
-                        </div>
                         <div class="form-group">
                             <label for="refakatDurumu">Refakat Durumu</label>
-                            <select id="refakatDurumu" name="refakatDurumu">
-                                <option value="Evet">Evet</option>
-                                <option value="Hayır">Hayır</option>
-                                <option value="N/A">N/A</option>
-                            </select>
+                            <input type="text" id="refakatDurumu" name="refakatDurumu">
                         </div>
                         <div class="form-group">
-                            <label for="servisEtkiDurum">Servis Etkisi</label>
-                            <select id="servisEtkiDurum" name="servisEtkiDurum">
-                                <option value="VAR">VAR</option>
-                                <option value="YOK">YOK</option>
-                                <option value="N/A">N/A</option>
-                            </select>
+                            <label for="hagsSuresi">HAGS Süresi</label>
+                            <input type="text" id="hagsSuresi" name="hagsSuresi">
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="arizaSuresi">Arıza Süresi</label>
-                            <input type="text" id="arizaSuresi" name="arizaSuresi" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="kaliciCozum">KALICI ÇÖZÜM SAĞLANDI</label>
-                            <select id="kaliciCozum" name="kaliciCozum">
-                                <option value="Evet">Evet</option>
-                                <option value="Hayır">Hayır</option>
-                                <option value="N/A">N/A</option>
-                            </select>
+                            <label for="kesintiSuresi">Kesinti Süresi</label>
+                            <input type="text" id="kesintiSuresi" name="kesintiSuresi">
                         </div>
                         <div class="form-group">
-                            <label for="kullanilanMalzeme">KULLANILAN MALZEME</label>
+                            <label for="kullanilanMalzeme">Kullanılan Malzeme</label>
                             <input type="text" id="kullanilanMalzeme" name="kullanilanMalzeme">
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label for="aciklama">AÇIKLAMA</label>
-                        <textarea id="aciklama" name="aciklama" rows="3"></textarea>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="aciklama">Açıklama</label>
+                            <textarea id="aciklama" name="aciklama" rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="serivsEtkisi">Servis Etkisi (Detay)</label>
+                            <input type="text" id="serivsEtkisi" name="serivsEtkisi">
+                        </div>
                     </div>
                     <div class="form-actions">
+                        <button type="submit" class="btn-primary" id="saveBtn">Kaydet</button>
                         <button type="button" class="btn-secondary" id="cancelBtn">İptal</button>
-                        <button type="button" class="btn-primary" id="saveBtn">Kaydet</button>
                     </div>
                 </form>
             </div>
@@ -833,333 +843,42 @@
     </div>
     
     <script>
-        // Sample data for demonstration
-        let sampleData = [
-            {
-                id: 1,
-                hafta: "W02", 
-                bolge: "BURSA", 
-                bultenNo: "10099810779", 
-                il: "CANAKKALE", 
-                guzergah: "CANAKKALE MERKEZ - CANAKKALE EZINE",
-                kordinatA: "", 
-                kordinatB: "", 
-                servisEtkisi: "YOK",
-                lokasyon: "Şehirler arası", 
-                arizaBaslangic: "2025-01-06T12:20:00", 
-                arizaBitis: "2025-01-06T18:37:00",
-                kabloTipi: "",
-                hagsSuresi: "",
-                kesintiSuresi: "",
-                arizaKonsolide: "Özel Kurum Çalışması", 
-                arizaKokNeden: "Doğalgaz Firması Çalışması", 
-                hagsAsildi: "Evet", 
-                refakatDurumu: "Hayır", 
-                servisEtkiDurum: "YOK", 
-                arizaSuresi: "06:17",
-                kaliciCozum: "Evet",
-                kullanilanMalzeme: "",
-                aciklama: ""
-            },
-            {
-                id: 2,
-                hafta: "W02", 
-                bolge: "BURSA", 
-                bultenNo: "10099825178", 
-                il: "BURSA", 
-                guzergah: "BURSA YILDIRIM - BURSA OSMANGAZI",
-                kordinatA: "", 
-                kordinatB: "", 
-                servisEtkisi: "YOK",
-                lokasyon: "Şehir içi", 
-                arizaBaslangic: "2025-01-06T16:35:00", 
-                arizaBitis: "2025-01-06T22:59:00",
-                kabloTipi: "",
-                hagsSuresi: "",
-                kesintiSuresi: "",
-                arizaKonsolide: "Sabotaj", 
-                arizaKokNeden: "Sabotaj", 
-                hagsAsildi: "Evet", 
-                refakatDurumu: "Hayır", 
-                servisEtkiDurum: "YOK", 
-                arizaSuresi: "06:24",
-                kaliciCozum: "Evet",
-                kullanilanMalzeme: "",
-                aciklama: ""
-            },
-            {
-                id: 3,
-                hafta: "W19", 
-                bolge: "BURSA", 
-                bultenNo: "10105742802", 
-                il: "BURSA", 
-                guzergah: "BURSA KARACABEY - BALIKESIR KARESI",
-                kordinatA: "", 
-                kordinatB: "", 
-                servisEtkisi: "VAR",
-                lokasyon: "Şehirler arası", 
-                arizaBaslangic: "2025-05-08T14:25:00", 
-                arizaBitis: "2025-05-08T16:13:00",
-                kabloTipi: "",
-                hagsSuresi: "",
-                kesintiSuresi: "",
-                arizaKonsolide: "Resmi Kurum Kazı Çalışması", 
-                arizaKokNeden: "TC Karayolları Çalışması", 
-                hagsAsildi: "N/A", 
-                refakatDurumu: "N/A", 
-                servisEtkiDurum: "VAR", 
-                arizaSuresi: "01:48",
-                kaliciCozum: "Evet",
-                kullanilanMalzeme: "",
-                aciklama: ""
-            }
-        ];
-        
-        // Current page for pagination
+        let sampleData = [];
         let currentPage = 1;
         const rowsPerPage = 10;
-        
-        // Initialize the application when the DOM is fully loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize the dashboard
+
+        // Fetch and display data
+        async function fetchData() {
+            const response = await fetch('/api/arizalar');
+            sampleData = await response.json();
             updateDashboardStats();
-            renderCharts();
             renderTable();
-            setupEventListeners();
-        });
-        
-        // Set up all event listeners
-        function setupEventListeners() {
-            // File import area
-            const importArea = document.getElementById('importArea');
-            const fileInput = document.getElementById('fileInput');
-            
-            importArea.addEventListener('click', () => {
-                fileInput.click();
-            });
-            
-            importArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                importArea.style.borderColor = '#3b82f6';
-            });
-            
-            importArea.addEventListener('dragleave', () => {
-                importArea.style.borderColor = '#475569';
-            });
-            
-            importArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                importArea.style.borderColor = '#475569';
-                
-                if (e.dataTransfer.files.length) {
-                    handleFileImport(e.dataTransfer.files[0]);
-                }
-            });
-            
-            fileInput.addEventListener('change', (e) => {
-                if (e.target.files.length) {
-                    handleFileImport(e.target.files[0]);
-                }
-            });
-            
-            // Add new button
-            document.getElementById('addNewBtn').addEventListener('click', openAddModal);
-            
-            // Export Excel button
-            document.getElementById('exportExcelBtn').addEventListener('click', exportToExcel);
-            
-            // Modal close button
-            document.querySelector('.close').addEventListener('click', closeModal);
-            
-            // Cancel button in modal
-            document.getElementById('cancelBtn').addEventListener('click', closeModal);
-            
-            // Save button in modal
-            document.getElementById('saveBtn').addEventListener('click', saveRecord);
         }
-        
-        // Update dashboard statistics
+
         function updateDashboardStats() {
-            document.getElementById('totalCount').textContent = sampleData.length;
-            
-            const hagsCount = sampleData.filter(item => item.hagsAsildi === 'Evet').length;
-            document.getElementById('hagsCount').textContent = hagsCount;
-            
-            const serviceCount = sampleData.filter(item => item.servisEtkiDurum === 'VAR').length;
-            document.getElementById('serviceCount').textContent = serviceCount;
-            
-            const cityCount = sampleData.filter(item => item.lokasyon === 'Şehir içi').length;
-            document.getElementById('cityCount').textContent = cityCount;
-            
-            document.getElementById('lastUpdate').textContent = new Date().toLocaleString('tr-TR');
+            const totalCount = sampleData.length;
+            const hagsCount = sampleData.filter(item => item.hags).length;
+            const serviceCount = sampleData.filter(item => item.servisEtkisi === 'Evet').length;
+            const cityCount = sampleData.filter(item => item.bolge === 'Şehir İçi').length;
+
+            document.getElementById('totalCount').innerText = totalCount;
+            document.getElementById('hagsCount').innerText = hagsCount;
+            document.getElementById('serviceCount').innerText = serviceCount;
+            document.getElementById('cityCount').innerText = cityCount;
         }
-        
-        // Render charts
-        function renderCharts() {
-            // Regional distribution chart
-            const regionCtx = document.getElementById('regionChart').getContext('2d');
-            const regionData = {
-                labels: ['ASYA', 'AVRUPA', 'BURSA', 'İZMİR', 'KOCAELİ', 'MUĞLA'],
-                datasets: [{
-                    label: 'Arıza Sayısı',
-                    data: [84, 267, 76, 47, 38, 22],
-                    backgroundColor: [
-                        'rgba(59, 130, 246, 0.7)', 
-                        'rgba(34, 197, 94, 0.7)',
-                        'rgba(245, 158, 11, 0.7)',
-                        'rgba(239, 68, 68, 0.7)',
-                        'rgba(168, 85, 247, 0.7)',
-                        'rgba(14, 165, 233, 0.7)'
-                    ],
-                    borderWidth: 0
-                }]
-            };
-            
-            new Chart(regionCtx, {
-                type: 'bar',
-                data: regionData,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            ticks: {
-                                color: '#94a3b8'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                color: '#94a3b8'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
-                }
-            });
-            
-            // Trend chart
-            const trendCtx = document.getElementById('trendChart').getContext('2d');
-            const trendData = {
-                labels: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
-                datasets: [
-                    {
-                        label: '2021',
-                        data: [110, 105, 118, 120, 115, 125, 122, 118, 128, 125, 130, 120],
-                        borderColor: '#f59e0b',
-                        tension: 0.4,
-                        borderWidth: 2,
-                        pointRadius: 3,
-                        pointBackgroundColor: '#f59e0b'
-                    },
-                    {
-                        label: '2022',
-                        data: [95, 85, 80, 95, 90, 85, 80, 75, 85, 90, 88, 85],
-                        borderColor: '#3b82f6',
-                        tension: 0.4,
-                        borderWidth: 2,
-                        pointRadius: 3,
-                        pointBackgroundColor: '#3b82f6'
-                    },
-                    {
-                        label: '2023',
-                        data: [45, 50, 48, 52, 46, 48, 50, 48, 50, 52, 48, 45],
-                        borderColor: '#ef4444',
-                        tension: 0.4,
-                        borderWidth: 2,
-                        pointRadius: 3,
-                        pointBackgroundColor: '#ef4444'
-                    },
-                    {
-                        label: '2024',
-                        data: [28, 30, 32, 29, 31, 28, 30, 32, 29, 33, 30, 31],
-                        borderColor: '#22c55e',
-                        tension: 0.4,
-                        borderWidth: 2,
-                        pointRadius: 3,
-                        pointBackgroundColor: '#22c55e'
-                    },
-                    {
-                        label: '2025',
-                        data: [20, 18, 22, 19, 21, 18, 20, 17, 19, 22, 20, 18],
-                        borderColor: '#a855f7',
-                        tension: 0.4,
-                        borderWidth: 2,
-                        pointRadius: 3,
-                        pointBackgroundColor: '#a855f7'
-                    }
-                ]
-            };
-            
-            new Chart(trendCtx, {
-                type: 'line',
-                data: trendData,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            ticks: {
-                                color: '#94a3b8'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                color: '#94a3b8'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                boxWidth: 12,
-                                usePointStyle: true,
-                                pointStyle: 'circle',
-                                color: '#94a3b8'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-        
-        // Render data table
+
         function renderTable() {
-            const table = document.getElementById('dataTable');
-            const tbody = table.querySelector('tbody');
-            tbody.innerHTML = '';
-            
-            // Calculate pagination
-            const start = (currentPage - 1) * rowsPerPage;
-            const end = start + rowsPerPage;
-            const paginatedData = sampleData.slice(start, end);
-            
+            const tableBody = document.querySelector('#dataTable tbody');
+            tableBody.innerHTML = '';
+
+            // Pagination logic
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = startIndex + rowsPerPage;
+            const paginatedData = sampleData.slice(startIndex, endIndex);
+
             paginatedData.forEach(item => {
-                const tr = document.createElement('tr');
-                
-                // Format dates for display
-                const startDate = new Date(item.arizaBaslangic).toLocaleString('tr-TR');
-                const endDate = new Date(item.arizaBitis).toLocaleString('tr-TR');
-                
-                tr.innerHTML = `
+                const row = document.createElement('tr');
+                row.innerHTML = `
                     <td>${item.hafta}</td>
                     <td>${item.bolge}</td>
                     <td>${item.bultenNo}</td>
@@ -1167,479 +886,206 @@
                     <td>${item.guzergah}</td>
                     <td>${item.kordinatA}</td>
                     <td>${item.kordinatB}</td>
-                    <td>${startDate}</td>
-                    <td>${endDate}</td>
+                    <td>${item.arizaBaslangic ? new Date(item.arizaBaslangic).toLocaleString() : ''}</td>
+                    <td>${item.arizaBitis ? new Date(item.arizaBitis).toLocaleString() : ''}</td>
                     <td>${item.kabloTipi}</td>
-                    <td>${item.arizaKokNeden}</td>
-                    <td><span class="status-badge ${item.hagsAsildi === 'Evet' ? 'status-warning' : 'status-ok'}">${item.hagsAsildi}</span></td>
-                    <td><span class="status-badge ${item.servisEtkiDurum === 'VAR' ? 'status-error' : 'status-ok'}">${item.servisEtkiDurum}</span></td>
+                    <td>${item.kokNeden}</td>
+                    <td>${item.hags ? 'Evet' : 'Hayır'}</td>
+                    <td>${item.servisEtkisi === 'Evet' ? 'Evet' : 'Hayır'}</td>
                     <td>${item.arizaSuresi}</td>
                     <td>${item.kaliciCozum}</td>
                     <td class="action-cell">
-                        <button class="edit" onclick="editRecord(${item.id})"><i class="fas fa-edit"></i></button>
-                        <button class="delete" onclick="deleteRecord(${item.id})"><i class="fas fa-trash"></i></button>
+                        <button class="edit" onclick="openEditModal(${item.id})"><i class="fas fa-edit"></i> Düzenle</button>
+                        <button class="delete" onclick="deleteRecord(${item.id})"><i class="fas fa-trash"></i> Sil</button>
                     </td>
                 `;
-                
-                tbody.appendChild(tr);
+                tableBody.appendChild(row);
             });
-            
-            // Render pagination
-            renderPagination();
+
+            setupPagination();
         }
-        
-        // Render pagination controls
-        function renderPagination() {
-            const pagination = document.getElementById('pagination');
-            pagination.innerHTML = '';
-            
+
+        function setupPagination() {
+            const paginationContainer = document.getElementById('pagination');
+            paginationContainer.innerHTML = '';
+
             const totalPages = Math.ceil(sampleData.length / rowsPerPage);
-            
-            // Previous button
-            const prevBtn = document.createElement('button');
-            prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
-            prevBtn.disabled = currentPage === 1;
-            prevBtn.addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderTable();
-                }
-            });
-            pagination.appendChild(prevBtn);
-            
-            // Page buttons
-            let startPage = Math.max(1, currentPage - 2);
-            let endPage = Math.min(totalPages, startPage + 4);
-            
-            if (endPage - startPage < 4 && startPage > 1) {
-                startPage = Math.max(1, endPage - 4);
-            }
-            
-            for (let i = startPage; i <= endPage; i++) {
-                const pageBtn = document.createElement('button');
-                pageBtn.textContent = i;
-                pageBtn.className = i === currentPage ? 'active' : '';
-                pageBtn.addEventListener('click', () => {
+            for (let i = 1; i <= totalPages; i++) {
+                const button = document.createElement('button');
+                button.innerText = i;
+                button.className = i === currentPage ? 'active' : '';
+                button.onclick = () => {
                     currentPage = i;
                     renderTable();
-                });
-                pagination.appendChild(pageBtn);
-            }
-            
-            // Next button
-            const nextBtn = document.createElement('button');
-            nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
-            nextBtn.disabled = currentPage === totalPages;
-            nextBtn.addEventListener('click', () => {
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    renderTable();
-                }
-            });
-            pagination.appendChild(nextBtn);
-        }
-        
-        // Handle file import
-        function handleFileImport(file) {
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                let data;
-                const filename = file.name.toLowerCase();
-                
-                try {
-                    if (filename.endsWith('.csv')) {
-                        // Parse CSV
-                        const csvData = e.target.result;
-                        data = parseCSV(csvData);
-                    } else {
-                        // Parse Excel
-                        const binaryData = e.target.result;
-                        const workbook = XLSX.read(binaryData, { type: 'binary' });
-                        const firstSheet = workbook.SheetNames[0];
-                        const worksheet = workbook.Sheets[firstSheet];
-                        data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                        
-                        // Process header and convert to objects
-                        if (data.length > 0) {
-                            const headers = data[0];
-                            data = data.slice(1).map(row => {
-                                const obj = {};
-                                headers.forEach((header, i) => {
-                                    obj[header.trim()] = row[i] || '';
-                                });
-                                return obj;
-                            });
-                        }
-                    }
-                    
-                    processImportedData(data);
-                    showStatusMessage('success', `Excel başarıyla içe aktarıldı. ${data.length} kayıt işlendi.`);
-                } catch (error) {
-                    console.error('Import error:', error);
-                    showStatusMessage('error', 'Dosya içe aktarılırken hata oluştu: ' + error.message);
-                }
-            };
-            
-            if (file.name.toLowerCase().endsWith('.csv')) {
-                reader.readAsText(file);
-            } else {
-                reader.readAsBinaryString(file);
+                };
+                paginationContainer.appendChild(button);
             }
         }
-        
-        // Parse CSV data
-        function parseCSV(csvText) {
-            return Papa.parse(csvText, {
-                header: true,
-                dynamicTyping: true,
-                skipEmptyLines: true,
-                trimHeaders: true
-            }).data;
-        }
-        
-        // Process imported data
-        function processImportedData(data) {
-            if (!data || !data.length) return;
-            
-            let newCount = 0;
-            let updateCount = 0;
-            let skippedCount = 0;
-            
-            data.forEach(row => {
-                // Skip empty rows
-                if (Object.values(row).every(val => !val)) return;
-                
-                // Find the relevant bulletin number column
-                let bultenNo = row['Bülten Numarası'] || row['Bulten Numarasi'] || row['BultenNumarasi'] || '';
-                
-                if (!bultenNo) {
-                    // Try to find a column that might contain the bulletin number
-                    for (const key in row) {
-                        if (key.toLowerCase().includes('bulten') || key.toLowerCase().includes('bülten')) {
-                            bultenNo = row[key];
-                            break;
-                        }
-                    }
-                }
-                
-                if (bultenNo) {
-                    // Check if this record already exists
-                    const existingIndex = sampleData.findIndex(item => item.bultenNo === String(bultenNo));
-                    
-                    if (existingIndex >= 0) {
-                        // Skip if already exists (we only want to add new records)
-                        skippedCount++;
-                        return;
-                    } else {
-                        // Add new record
-                        // Generate a new ID
-                        const newId = sampleData.length > 0 ? Math.max(...sampleData.map(item => item.id)) + 1 : 1;
-                        
-                        // Map the imported data to our data model
-                        const newRecord = mapImportedDataToModel(row, newId);
-                        
-                        // Add the record
-                        sampleData.push(newRecord);
-                        newCount++;
-                    }
-                }
-            });
-            
-            // Update the UI
-            updateDashboardStats();
-            renderTable();
-            
-            showStatusMessage('success', `Excel başarıyla içe aktarıldı. ${newCount} yeni kayıt eklendi, ${skippedCount} kayıt zaten mevcut olduğu için atlandı.`);
-        }
-        
-        // Map imported data to our data model
-        function mapImportedDataToModel(row, id) {
-            // Handle different column names for flexibility
-            const getValueForField = (fieldNames) => {
-                for (const name of fieldNames) {
-                    if (row[name] !== undefined) return row[name] || '';
-                }
-                return '';
-            };
-            
-            return {
-                id: id,
-                hafta: getValueForField(['Hafta']),
-                bolge: getValueForField(['Bölge', 'Bolge']),
-                bultenNo: String(getValueForField(['Bülten Numarası', 'Bulten Numarasi', 'BultenNumarasi'])),
-                il: getValueForField(['İL', 'IL', 'Il']),
-                guzergah: getValueForField(['Güzergah', 'Guzergah']),
-                kordinatA: '', // These will be filled manually
-                kordinatB: '', // These will be filled manually
-                servisEtkisi: 'YOK', // Default value
-                lokasyon: getValueForField(['Lokasyon']),
-                arizaBaslangic: formatDateForInput(getValueForField(['Arıza Başlangıç', 'Ariza Baslangic'])),
-                arizaBitis: formatDateForInput(getValueForField(['Arıza Bitiş', 'Ariza Bitis'])),
-                kabloTipi: '', // Will be filled manually
-                hagsSuresi: '', // Will be filled manually
-                kesintiSuresi: '', // Will be filled manually
-                arizaKonsolide: getValueForField(['Arıza Konsolide Kök Neden', 'Ariza Konsolide Kok Neden']),
-                arizaKokNeden: getValueForField(['Arıza Kök Neden', 'Ariza Kok Neden']),
-                hagsAsildi: getValueForField(['HAGS Aşıldı mı', 'Hags Asildi mi']) || 'N/A',
-                refakatDurumu: getValueForField(['Refakat Durumu', 'RefakatDurumu']) || 'N/A',
-                servisEtkiDurum: getValueForField(['Servis Etkisi', 'ServisEtkisi']) || 'YOK',
-                arizaSuresi: getValueForField(['Arıza Süresi', 'Ariza Suresi']),
-                kaliciCozum: 'Evet', // Default value
-                kullanilanMalzeme: '', // Will be filled manually
-                aciklama: '' // Will be filled manually
-            };
-        }
-        
-        // Format date for input fields
-        function formatDateForInput(dateStr) {
-            if (!dateStr) return '';
-            
-            try {
-                // Handle various date formats
-                let date;
-                
-                if (typeof dateStr === 'string') {
-                    // Check for different formats
-                    if (dateStr.includes('/')) {
-                        // Format: DD/MM/YYYY HH:mm:ss
-                        const parts = dateStr.split(' ');
-                        const dateParts = parts[0].split('/');
-                        const timeParts = parts[1] ? parts[1].split(':') : ['00', '00', '00'];
-                        
-                        date = new Date(
-                            parseInt(dateParts[2]),
-                            parseInt(dateParts[1]) - 1,
-                            parseInt(dateParts[0]),
-                            parseInt(timeParts[0]),
-                            parseInt(timeParts[1]),
-                            timeParts[2] ? parseInt(timeParts[2]) : 0
-                        );
-                    } else if (dateStr.includes('.')) {
-                        // Format: DD.MM.YYYY HH:mm:ss
-                        const parts = dateStr.split(' ');
-                        const dateParts = parts[0].split('.');
-                        const timeParts = parts[1] ? parts[1].split(':') : ['00', '00', '00'];
-                        
-                        date = new Date(
-                            parseInt(dateParts[2]),
-                            parseInt(dateParts[1]) - 1,
-                            parseInt(dateParts[0]),
-                            parseInt(timeParts[0]),
-                            parseInt(timeParts[1]),
-                            timeParts[2] ? parseInt(timeParts[2]) : 0
-                        );
-                    } else {
-                        // Try standard parsing
-                        date = new Date(dateStr);
-                    }
-                } else {
-                    // Handle Excel date numbers
-                    if (typeof dateStr === 'number') {
-                        // Excel dates are days since 1900-01-01
-                        const excelEpoch = new Date(1900, 0, 1);
-                        date = new Date(excelEpoch.getTime() + (dateStr - 1) * 24 * 60 * 60 * 1000);
-                    } else {
-                        date = new Date(dateStr);
-                    }
-                }
-                
-                // Check if date is valid
-                if (isNaN(date.getTime())) {
-                    return '';
-                }
-                
-                // Format for datetime-local input
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                const hours = String(date.getHours()).padStart(2, '0');
-                const minutes = String(date.getMinutes()).padStart(2, '0');
-                
-                return `${year}-${month}-${day}T${hours}:${minutes}`;
-            } catch (e) {
-                console.error('Date format error:', e);
-                return '';
+
+        function openEditModal(id) {
+            const item = sampleData.find(item => item.id === id);
+            if (item) {
+                document.getElementById('modalTitle').innerText = 'Fiber Arıza Düzenle';
+                document.getElementById('rowId').value = item.id;
+                document.getElementById('hafta').value = item.hafta || '';
+                document.getElementById('bolge').value = item.bolge || '';
+                document.getElementById('bultenNo').value = item.bultenNo || '';
+                document.getElementById('il').value = item.il || '';
+                document.getElementById('guzergah').value = item.guzergah || '';
+                document.getElementById('kordinatA').value = item.kordinatA || '';
+                document.getElementById('kordinatB').value = item.kordinatB || '';
+                document.getElementById('baslangicTarihi').value = item.arizaBaslangic
+                    ? new Date(item.arizaBaslangic).toISOString().slice(0, 16)
+                    : '';
+                document.getElementById('bitisTarihi').value = item.arizaBitis
+                    ? new Date(item.arizaBitis).toISOString().slice(0, 16)
+                    : '';
+                document.getElementById('kabloTipi').value = item.kabloTipi || '';
+                document.getElementById('kokNeden').value = item.kokNeden || '';
+                document.getElementById('hags').value = item.hags || '';
+                document.getElementById('servisEtkisi').value = item.servisEtkisi || '';
+                document.getElementById('arizaSuresi').value = item.arizaSuresi || '';
+                document.getElementById('kaliciCozum').checked = !!item.kaliciCozum;
+
+                // Eksik olan 9 alanı da ekleyin:
+                if (document.getElementById('arizaKonsolide')) document.getElementById('arizaKonsolide').value = item.arizaKonsolide || '';
+                if (document.getElementById('lokasyon')) document.getElementById('lokasyon').value = item.lokasyon || '';
+                if (document.getElementById('refakatDurumu')) document.getElementById('refakatDurumu').value = item.refakatDurumu || '';
+                if (document.getElementById('hagsSuresi')) document.getElementById('hagsSuresi').value = item.hagsSuresi || '';
+                if (document.getElementById('kesintiSuresi')) document.getElementById('kesintiSuresi').value = item.kesintiSuresi || '';
+                if (document.getElementById('kullanilanMalzeme')) document.getElementById('kullanilanMalzeme').value = item.kullanilanMalzeme || '';
+                if (document.getElementById('aciklama')) document.getElementById('aciklama').value = item.aciklama || '';
+                if (document.getElementById('serivsEtkisi')) document.getElementById('serivsEtkisi').value = item.serivsEtkisi || '';
+                const modal = document.getElementById('detail-modal');
+                modal.style.display = 'block';
+                setTimeout(() => document.getElementById('hafta').focus(), 100);
             }
         }
-        
-        // Show status message
-        function showStatusMessage(type, message) {
-            const statusMessage = document.getElementById('statusMessage');
-            statusMessage.textContent = message;
-            statusMessage.className = `status-message ${type}`;
-            statusMessage.style.display = 'block';
-            
-            // Hide after 5 seconds
-            setTimeout(() => {
-                statusMessage.style.display = 'none';
-            }, 5000);
-        }
-        
-        // Open modal for adding new record
-        function openAddModal() {
-            document.getElementById('modalTitle').textContent = 'Yeni Fiber Arıza Ekle';
-            document.getElementById('rowId').value = '';
+
+        document.getElementById('addNewBtn').onclick = () => {
+            document.getElementById('modalTitle').innerText = 'Yeni Fiber Arıza Ekle';
             document.getElementById('detailForm').reset();
-            
-            // Set default values
-            document.getElementById('bolge').value = 'BURSA';
-            document.getElementById('hafta').value = getCurrentWeek();
-            
-            openModal();
-        }
-        
-        // Get current week in format W##
-        function getCurrentWeek() {
-            const now = new Date();
-            const onejan = new Date(now.getFullYear(), 0, 1);
-            const week = Math.ceil((((now - onejan) / 86400000) + onejan.getDay() + 1) / 7);
-            return `W${String(week).padStart(2, '0')}`;
-        }
-        
-        // Open modal for editing record
-        function editRecord(id) {
-            const record = sampleData.find(item => item.id === id);
-            if (!record) return;
-            
-            document.getElementById('modalTitle').textContent = 'Fiber Arıza Düzenle';
-            document.getElementById('rowId').value = record.id;
-            
-            // Fill form with record data
-            for (const key in record) {
-                const field = document.getElementById(key);
-                if (field) {
-                    field.value = record[key];
-                }
-            }
-            
-            openModal();
-        }
-        
-        // Open modal
-        function openModal() {
+            document.getElementById('rowId').value = '';
+            document.getElementById('bultenNo').readOnly = false; // yeni kayıtta düzenlenebilir
             document.getElementById('detail-modal').style.display = 'block';
         }
-        
-        // Close modal
-        function closeModal() {
-            document.getElementById('detail-modal').style.display = 'none';
-        }
-        
-        // Save record
-        function saveRecord() {
-            const form = document.getElementById('detailForm');
-            const rowId = document.getElementById('rowId').value;
-            
-            // Basic form validation
-            const requiredFields = ['hafta', 'bolge', 'bultenNo', 'il', 'guzergah', 'lokasyon', 'arizaBaslangic', 'arizaBitis'];
-            for (const field of requiredFields) {
-                const input = document.getElementById(field);
-                if (!input.value.trim()) {
-                    alert(`${input.previousElementSibling.textContent} alanı zorunludur.`);
-                    input.focus();
+
+        document.getElementById('saveBtn').onclick = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(document.getElementById('detailForm'));
+            const data = Object.fromEntries(formData);
+            data.kaliciCozum = document.getElementById('kaliciCozum').checked;
+
+            // Bülten no kontrolü (yeni kayıt için)
+            if (!data.rowId) {
+                if (sampleData.some(item => item.bultenNo === data.bultenNo)) {
+                    alert('Bu Bülten Numarası ile zaten bir kayıt var!');
                     return;
                 }
             }
-            
-            // Gather form data
-            const formData = {
-                hafta: document.getElementById('hafta').value,
-                bolge: document.getElementById('bolge').value,
-                bultenNo: document.getElementById('bultenNo').value,
-                il: document.getElementById('il').value,
-                guzergah: document.getElementById('guzergah').value,
-                kordinatA: document.getElementById('kordinatA').value,
-                kordinatB: document.getElementById('kordinatB').value,
-                servisEtkisi: document.getElementById('servisEtkisi').value,
-                lokasyon: document.getElementById('lokasyon').value,
-                arizaBaslangic: document.getElementById('arizaBaslangic').value,
-                arizaBitis: document.getElementById('arizaBitis').value,
-                kabloTipi: document.getElementById('kabloTipi').value,
-                hagsSuresi: document.getElementById('hagsSuresi').value,
-                kesintiSuresi: document.getElementById('kesintiSuresi').value,
-                arizaKonsolide: document.getElementById('arizaKonsolide').value,
-                arizaKokNeden: document.getElementById('arizaKokNeden').value,
-                hagsAsildi: document.getElementById('hagsAsildi').value,
-                refakatDurumu: document.getElementById('refakatDurumu').value,
-                servisEtkiDurum: document.getElementById('servisEtkiDurum').value,
-                arizaSuresi: document.getElementById('arizaSuresi').value,
-                kaliciCozum: document.getElementById('kaliciCozum').value,
-                kullanilanMalzeme: document.getElementById('kullanilanMalzeme').value,
-                aciklama: document.getElementById('aciklama').value
-            };
-            
-            if (rowId) {
-                // Update existing record
-                const index = sampleData.findIndex(item => item.id === parseInt(rowId));
-                if (index >= 0) {
-                    sampleData[index] = { ...sampleData[index], ...formData };
-                }
-            } else {
-                // Add new record
-                const newId = sampleData.length > 0 ? Math.max(...sampleData.map(item => item.id)) + 1 : 1;
-                sampleData.push({ id: newId, ...formData });
+
+            // Tarihleri ISO formatına çevir
+            data.baslangicTarihi = data.baslangicTarihi ? new Date(data.baslangicTarihi).toISOString() : '';
+            data.bitisTarihi = data.bitisTarihi ? new Date(data.bitisTarihi).toISOString() : '';
+
+            // Eksik olan 9 alanı da ekleyin (formda varsa)
+            data.arizaKonsolide = data.arizaKonsolide || '';
+            data.lokasyon = data.lokasyon || '';
+            data.refakatDurumu = data.refakatDurumu || '';
+            data.hagsSuresi = data.hagsSuresi || '';
+            data.kesintiSuresi = data.kesintiSuresi || '';
+            data.kullanilanMalzeme = data.kullanilanMalzeme || '';
+            data.aciklama = data.aciklama || '';
+            data.serivsEtkisi = data.serivsEtkisi || '';
+
+            let url = '/api/ariza';
+            let method = 'POST';
+
+            if (data.rowId) {
+                url = `/api/ariza/${data.rowId}`;
+                method = 'PUT';
             }
-            
-            // Update UI
-            updateDashboardStats();
-            renderTable();
-            closeModal();
-        }
-        
-        // Delete record
-        function deleteRecord(id) {
-            if (confirm('Bu kaydı silmek istediğinizden emin misiniz?')) {
-                sampleData = sampleData.filter(item => item.id !== id);
-                updateDashboardStats();
-                renderTable();
-            }
-        }
-        
-        // Export data to Excel
-        function exportToExcel() {
-            // Prepare data for export
-            const exportData = sampleData.map(item => {
-                return {
-                    'Hafta': item.hafta,
-                    'Bölge': item.bolge,
-                    'Bülten Numarası': item.bultenNo,
-                    'İL': item.il,
-                    'Güzergah': item.guzergah,
-                    'KORDİNAT A': item.kordinatA,
-                    'KORDİNAT B': item.kordinatB,
-                    'Lokasyon': item.lokasyon,
-                    'Arıza Başlangıç': new Date(item.arizaBaslangic).toLocaleString('tr-TR'),
-                    'Arıza Bitiş': new Date(item.arizaBitis).toLocaleString('tr-TR'),
-                    'Kablo Tipi': item.kabloTipi,
-                    'HAGS Süresi': item.hagsSuresi,
-                    'Kesinti Süresi': item.kesintiSuresi,
-                    'Arıza Konsolide Kök Neden': item.arizaKonsolide,
-                    'Arıza Kök Neden': item.arizaKokNeden,
-                    'HAGS Aşıldı mı': item.hagsAsildi,
-                    'Refakat Durumu': item.refakatDurumu,
-                    'Servis Etkisi': item.servisEtkiDurum,
-                    'Arıza Süresi': item.arizaSuresi,
-                    'Kalıcı Çözüm Sağlandı': item.kaliciCozum,
-                    'Kullanılan Malzeme': item.kullanilanMalzeme,
-                    'Açıklama': item.aciklama
-                };
+
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
             });
-            
-            // Create worksheet
-            const ws = XLSX.utils.json_to_sheet(exportData);
-            
-            // Create workbook
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "FiberArızaRaporu");
-            
-            // Export to file
-            XLSX.writeFile(wb, `FiberArızaRaporu_${new Date().toISOString().slice(0, 10)}.xlsx`);
+
+            if (response.ok) {
+                alert(data.rowId ? 'Kayıt güncellendi!' : 'Yeni kayıt eklendi!');
+                fetchData();
+                document.getElementById('detail-modal').style.display = 'none';
+            } else {
+                alert('Kayıt işlemi başarısız!');
+            }
         }
-        
-        // Make functions available globally
-        window.editRecord = editRecord;
-        window.deleteRecord = deleteRecord;
+
+        document.getElementById('cancelBtn').onclick = () => {
+            const modal = document.getElementById('detail-modal');
+            modal.style.display = 'none';
+        }
+
+        async function deleteRecord(id) {
+            if (!confirm('Bu kaydı silmek istediğinize emin misiniz?')) return;
+            const resp = await fetch(`/api/ariza/${id}`, { method: 'DELETE' });
+            if (resp.ok) fetchData();
+            else alert('Silme işlemi başarısız!');
+        }
+
+        document.getElementById('importArea').onclick = function() {
+            document.getElementById('fileInput').click();
+        };
+        document.getElementById('importArea').ondragover = function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#3b82f6';
+        };
+        document.getElementById('importArea').ondragleave = function(e) {
+            e.preventDefault();
+            this.style.borderColor = '';
+        };
+        document.getElementById('importArea').ondrop = function(e) {
+            e.preventDefault();
+            this.style.borderColor = '';
+            let files = e.dataTransfer.files;
+            if (files.length > 0) uploadExcel(files[0]);
+        };
+        document.getElementById('fileInput').onchange = function(e) {
+            if (this.files.length > 0) uploadExcel(this.files[0]);
+        };
+
+        function uploadExcel(file) {
+            let formData = new FormData();
+            formData.append('excel_file', file);
+            fetch('{{ url_for("upload_excel") }}', {
+                method: 'POST',
+                body: formData
+            }).then(resp => {
+                if (resp.redirected) {
+                    window.location.href = resp.url; // Yükleme sonrası explorer'a yönlendir
+                } else {
+                    document.getElementById('statusMessage').innerText = 'Yükleme başarısız!';
+                    document.getElementById('statusMessage').className = 'status-message error';
+                    document.getElementById('statusMessage').style.display = 'block';
+                }
+            });
+        }
+
+        // Modal kapatma fonksiyonu
+        function closeModal() {
+            document.getElementById('detail-modal').style.display = 'none';
+        }
+        document.querySelector('#detail-modal .close').onclick = closeModal;
+        document.getElementById('cancelBtn').onclick = closeModal;
+        document.addEventListener('keydown', function(e) {
+            if (e.key === "Escape") closeModal();
+        });
+        document.getElementById('detail-modal').onclick = function(e) {
+            if (e.target === this) closeModal();
+        };
+
+        // Initial data load
+        fetchData();
     </script>
 </body>
 </html>

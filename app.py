@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash, jsonify, send_file
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -88,17 +88,19 @@ def browse(subpath=''):
         
         parent_dir = '/'.join(parts[:-1]) if parts else ''
         
+        total = FiberAriza.query.count()
         return render_template('explorer.html', 
-                            items=items,
-                            current_path=subpath,
-                            breadcrumbs=breadcrumbs,
-                            parent_dir=parent_dir)
+                          items=items,
+                          current_path=subpath,
+                          breadcrumbs=breadcrumbs,
+                          parent_dir=parent_dir,
+                          total=total)
     
     except Exception as e:
         flash(f"Hata oluştu: {str(e)}", "error")
         return redirect(url_for('browse'))
 
-@app.route('/upload', methods=['POST'])
+@app.route('/upload_file', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
         flash('Dosya seçilmedi', 'error')
@@ -157,62 +159,81 @@ def create_folder():
 
 
 
-@app.route('/upload', methods=['POST'])
+@app.route('/upload_excel', methods=['POST'])
 def upload_excel():
     if 'excel_file' not in request.files:
         flash('Dosya seçilmedi', 'danger')
-        return redirect(url_for('index'))
-    
+        return redirect(url_for('browse'))
     file = request.files['excel_file']
     if file.filename == '':
         flash('Geçersiz dosya', 'danger')
-        return redirect(url_for('index'))
-    
+        return redirect(url_for('browse'))
+
     try:
+        import pandas as pd
         df = pd.read_excel(file)
+        df.columns = [str(col).strip() for col in df.columns]
+        required_columns = [
+            'Hafta', 'Bölge', 'Bülten Numarası', 'İL', 'Güzergah', 'Lokasyon',
+            'Arıza Başlangıç', 'Arıza Bitiş', 'Arıza Konsolide Kök Neden', 'Arıza Kök Neden',
+            'HAGS Aşıldı mı', 'Refakat Durumu', 'Servis Etkisi', 'Arıza Süresi'
+        ]
+        for col in required_columns:
+            if col not in df.columns:
+                flash(f"Excel'de '{col}' sütunu eksik!", 'danger')
+                return redirect(url_for('browse'))
+
         existing_nos = {x.bulten_no for x in FiberAriza.query.all()}
-        
         new_count = 0
+
+        def parse_date(val):
+            if pd.isnull(val):
+                return None
+            try:
+                return pd.to_datetime(val)
+            except Exception:
+                return None
+
         for _, row in df.iterrows():
-            bulten_no = str(row['Bülten Numarası'])
-            if bulten_no not in existing_nos:
-                new_ariza = FiberAriza(
-                    hafta=row['Hafta'],
-                    bolge=row['Bölge'],
-                    bulten_no=bulten_no,
-                    il=row['İL'],
-                    guzergah=row['Güzergah'],
-                    lokasyon=row['Lokasyon'],
-                    ariza_baslangic=datetime.strptime(row['Arıza Başlangıç'], '%d %B %Y %H:%M:%S'),
-                    ariza_bitis=datetime.strptime(row['Arıza Bitiş'], '%d %B %Y %H:%M:%S'),
-                    ariza_konsolide=row['Arıza Konsolide Kök Neden'],
-                    ariza_kok_neden=row['Arıza Kök Neden'],
-                    hags_asildi_mi=row['HAGS Aşıldı mı'],
-                    refakat_durumu=row['Refakat Durumu'],
-                    serivs_etkisi=row['SERİVS ETKİSİ'],      # H sütunu
-                    servis_etkisi=row['Servis Etkisi'],      # S sütunu
-                    ariza_suresi=row['Arıza Süresi'],
-                    # Yeni alanlar
-                    kordinat_a=row.get('KORDINAT A', ''),
-                    kordinat_b=row.get('KORDINAT B', ''),
-                    kablo_tipi=row.get('KABLO TIPI', ''),
-                    hags_suresi=row.get('HAGS SURESI', ''),
-                    kesinti_suresi=row.get('KESINTI SÜRESİ', ''),
-                    kalici_cozum=row.get('KALICI ÇÖZÜM SAĞLANDI', ''),
-                    kullanilan_malzeme=row.get('KULLANILAN MALZEME', ''),
-                    aciklama=row.get('ACIKLAMA', '')
-                )
-                db.session.add(new_ariza)
-                new_count += 1
-        
+            bulten_no = str(row.get('Bülten Numarası', '')).strip()
+            if not bulten_no or bulten_no in existing_nos:
+                continue
+
+            new_ariza = FiberAriza(
+                hafta=row.get('Hafta', ''),
+                bolge=row.get('Bölge', ''),
+                bulten_no=bulten_no,
+                il=row.get('İL', ''),
+                guzergah=row.get('Güzergah', ''),
+                lokasyon=row.get('Lokasyon', ''),
+                ariza_baslangic=parse_date(row.get('Arıza Başlangıç')),
+                ariza_bitis=parse_date(row.get('Arıza Bitiş')),
+                ariza_konsolide=row.get('Arıza Konsolide Kök Neden', ''),
+                ariza_kok_neden=row.get('Arıza Kök Neden', ''),
+                hags_asildi_mi=row.get('HAGS Aşıldı mı', ''),
+                refakat_durumu=row.get('Refakat Durumu', ''),
+                servis_etkisi=row.get('Servis Etkisi', ''),
+                ariza_suresi=row.get('Arıza Süresi', ''),
+                # 9 yeni alanı boş bırak
+                kordinat_a='',
+                kordinat_b='',
+                serivs_etkisi='',
+                kablo_tipi='',
+                hags_suresi='',
+                kesinti_suresi='',
+                kalici_cozum='',
+                kullanilan_malzeme='',
+                aciklama=''
+            )
+            db.session.add(new_ariza)
+            new_count += 1
+
         db.session.commit()
         flash(f'{new_count} yeni kayıt başarıyla eklendi', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Hata: {str(e)}', 'danger')
-    
-    return redirect(url_for('dashboard'))
-
+    return redirect(url_for('browse'))
 
 @app.route('/dashboard')
 def dashboard():
@@ -221,13 +242,165 @@ def dashboard():
         (FiberAriza.kordinat_a == '') |
         (FiberAriza.kalici_cozum == '')
     ).count()
-    
     arizalar = FiberAriza.query.order_by(FiberAriza.ariza_baslangic.desc()).limit(10).all()
-    
     return render_template('dashboard.html',
                          total=total,
                          incomplete=incomplete,
                          arizalar=arizalar)
+
+@app.route('/delete_ariza/<int:id>', methods=['POST'])
+def delete_ariza(id):
+    ariza = FiberAriza.query.get_or_404(id)
+    try:
+        db.session.delete(ariza)
+        db.session.commit()
+        flash('Kayıt başarıyla silindi', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Hata: {str(e)}', 'danger')
+    return redirect(url_for('browse'))
+
+@app.route('/api/arizalar')
+def api_arizalar():
+    arizalar = FiberAriza.query.all()
+    return jsonify([{
+        'id': a.id,
+        'hafta': a.hafta,
+        'bolge': a.bolge,
+        'bultenNo': a.bulten_no,
+        'il': a.il,
+        'guzergah': a.guzergah,
+        'kordinatA': a.kordinat_a,
+        'kordinatB': a.kordinat_b,
+        'servisEtkisi': a.serivs_etkisi,
+        'lokasyon': a.lokasyon,
+        'arizaBaslangic': a.ariza_baslangic.isoformat() if a.ariza_baslangic else '',
+        'arizaBitis': a.ariza_bitis.isoformat() if a.ariza_bitis else '',
+        'kabloTipi': a.kablo_tipi,
+        'hagsSuresi': a.hags_suresi,
+        'kesintiSuresi': a.kesinti_suresi,
+        'arizaKonsolide': a.ariza_konsolide,
+        'arizaKokNeden': a.ariza_kok_neden,
+        'hagsAsildi': a.hags_asildi_mi,
+        'refakatDurumu': a.refakat_durumu,
+        'servisEtkiDurum': a.servis_etkisi,
+        'arizaSuresi': a.ariza_suresi,
+        'kaliciCozum': a.kalici_cozum,
+        'kullanilanMalzeme': a.kullanilan_malzeme,
+        'aciklama': a.aciklama
+    } for a in arizalar])
+
+from flask import request
+
+@app.route('/api/ariza', methods=['POST'])
+def api_add_ariza():
+    data = request.get_json()
+    if FiberAriza.query.filter_by(bulten_no=data.get('bultenNo')).first():
+        return jsonify({'error': 'Bu Bülten Numarası ile zaten kayıt var!'}), 400
+
+    ariza = FiberAriza(
+        hafta=data.get('hafta'),
+        bolge=data.get('bolge'),
+        bulten_no=data.get('bultenNo'),
+        il=data.get('il'),
+        guzergah=data.get('guzergah'),
+        kordinat_a=data.get('kordinatA'),
+        kordinat_b=data.get('kordinatB'),
+        ariza_baslangic=datetime.fromisoformat(data.get('baslangicTarihi')) if data.get('baslangicTarihi') else None,
+        ariza_bitis=datetime.fromisoformat(data.get('bitisTarihi')) if data.get('bitisTarihi') else None,
+        kablo_tipi=data.get('kabloTipi'),
+        ariza_kok_neden=data.get('kokNeden'),
+        hags_asildi_mi=data.get('hags'),
+        servis_etkisi=data.get('servisEtkisi'),
+        ariza_suresi=data.get('arizaSuresi'),
+        kalici_cozum=data.get('kaliciCozum'),
+        ariza_konsolide=data.get('arizaKonsolide'),
+        lokasyon=data.get('lokasyon'),
+        refakat_durumu=data.get('refakatDurumu'),
+        hags_suresi=data.get('hagsSuresi'),
+        kesinti_suresi=data.get('kesintiSuresi'),
+        kullanilan_malzeme=data.get('kullanilanMalzeme'),
+        aciklama=data.get('aciklama'),
+        serivs_etkisi=data.get('serivsEtkisi')
+    )
+    db.session.add(ariza)
+    db.session.commit()
+    return jsonify({'status': 'ok'}), 201
+
+@app.route('/api/ariza/<int:id>', methods=['PUT'])
+def api_update_ariza(id):
+    data = request.get_json()
+    ariza = FiberAriza.query.get_or_404(id)
+    # Sadece başka bir kayıtta aynı bülten_no varsa hata ver
+    if FiberAriza.query.filter(FiberAriza.bulten_no == data.get('bultenNo'), FiberAriza.id != id).first():
+        return jsonify({'error': 'Bu Bülten Numarası ile zaten kayıt var!'}), 400
+
+    ariza.hafta = data.get('hafta')
+    ariza.bolge = data.get('bolge')
+    ariza.bulten_no = data.get('bultenNo')
+    ariza.il = data.get('il')
+    ariza.guzergah = data.get('guzergah')
+    ariza.kordinat_a = data.get('kordinatA')
+    ariza.kordinat_b = data.get('kordinatB')
+    ariza.ariza_baslangic = datetime.fromisoformat(data.get('baslangicTarihi')) if data.get('baslangicTarihi') else None
+    ariza.ariza_bitis = datetime.fromisoformat(data.get('bitisTarihi')) if data.get('bitisTarihi') else None
+    ariza.kablo_tipi = data.get('kabloTipi')
+    ariza.ariza_kok_neden = data.get('kokNeden')
+    ariza.hags_asildi_mi = data.get('hags')
+    ariza.servis_etkisi = data.get('servisEtkisi')
+    ariza.ariza_suresi = data.get('arizaSuresi')
+    ariza.kalici_cozum = data.get('kaliciCozum')
+    ariza.ariza_konsolide = data.get('arizaKonsolide')
+    ariza.lokasyon = data.get('lokasyon')
+    ariza.refakat_durumu = data.get('refakatDurumu')
+    ariza.hags_suresi = data.get('hagsSuresi')
+    ariza.kesinti_suresi = data.get('kesintiSuresi')
+    ariza.kullanilan_malzeme = data.get('kullanilanMalzeme')
+    ariza.aciklama = data.get('aciklama')
+    ariza.serivs_etkisi = data.get('serivsEtkisi')
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+@app.route('/api/ariza/<int:id>', methods=['DELETE'])
+def api_delete_ariza(id):
+    ariza = FiberAriza.query.get_or_404(id)
+    db.session.delete(ariza)
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+@app.template_filter('datetimeformat')
+def datetimeformat(value):
+    import datetime
+    return datetime.datetime.fromtimestamp(value).strftime('%Y-%m-%d %H:%M')
+
+@app.route('/download_ariza/<int:id>')
+def download_ariza(id):
+    ariza = FiberAriza.query.get_or_404(id)
+    # Burada ariza verisini bir Excel veya CSV dosyası olarak döndür
+    # Örnek:
+    import pandas as pd
+    from io import BytesIO
+    df = pd.DataFrame([{
+        'Koordinat A': ariza.kordinat_a,
+        'Koordinat B': ariza.kordinat_b,
+        # Diğer alanlar...
+    }])
+    output = BytesIO()
+    df.to_excel(output, index=False)
+    output.seek(0)
+    return send_file(output, as_attachment=True, download_name=f'ariza_{ariza.id}.xlsx')
+
+@app.route('/edit/<int:id>', methods=['GET', 'POST'])
+def edit_ariza(id):
+    ariza = FiberAriza.query.get_or_404(id)
+    if request.method == 'POST':
+        ariza.kordinat_a = request.form.get('kordinat_a')
+        ariza.kordinat_b = request.form.get('kordinat_b')
+        # Diğer alanlar...
+        db.session.commit()
+        flash('Kayıt güncellendi', 'success')
+        return redirect(url_for('browse'))
+    return render_template('edit.html', ariza=ariza)
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Dashboard</h2>
+    <div class="mb-3">
+        <strong>Toplam Kayıt:</strong> {{ total }}<br>
+        <strong>Eksik Bilgili Kayıt:</strong> {{ incomplete }}
+    </div>
+    <h4>Son 10 Kayıt</h4>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Bülten No</th>
+                <th>Hafta</th>
+                <th>Bölge</th>
+                <th>İl</th>
+                <th>Güzergah</th>
+                <th>Lokasyon</th>
+                <th>Başlangıç</th>
+                <th>Bitiş</th>
+                <th>İşlem</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ariza in arizalar %}
+            <tr>
+                <td>{{ ariza.bulten_no }}</td>
+                <td>{{ ariza.hafta }}</td>
+                <td>{{ ariza.bolge }}</td>
+                <td>{{ ariza.il }}</td>
+                <td>{{ ariza.guzergah }}</td>
+                <td>{{ ariza.lokasyon }}</td>
+                <td>{{ ariza.ariza_baslangic }}</td>
+                <td>{{ ariza.ariza_bitis }}</td>
+                <td>
+                    <form action="{{ url_for('delete_ariza', id=ariza.id) }}" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Silinsin mi?')">Sil</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
