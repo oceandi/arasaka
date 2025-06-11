@@ -7,6 +7,16 @@ import pandas as pd
 import simplekml
 from io import BytesIO
 import zipfile
+import locale
+
+# Türkçe locale ayarla
+try:
+    locale.setlocale(locale.LC_TIME, 'tr_TR.UTF-8')
+except:
+    try:
+        locale.setlocale(locale.LC_TIME, 'turkish')
+    except:
+        pass
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key'
@@ -193,9 +203,22 @@ def upload_excel():
             if pd.isnull(val):
                 return None
             try:
-                return pd.to_datetime(val)
+                # Türkçe ay isimlerini İngilizce'ye çevir
+                tr_months = {
+                    'Ocak': 'January', 'Şubat': 'February', 'Mart': 'March',
+                    'Nisan': 'April', 'Mayıs': 'May', 'Haziran': 'June',
+                    'Temmuz': 'July', 'Ağustos': 'August', 'Eylül': 'September',
+                    'Ekim': 'October', 'Kasım': 'November', 'Aralık': 'December'
+                }
+                val_str = str(val)
+                for tr, en in tr_months.items():
+                    val_str = val_str.replace(tr, en)
+                return pd.to_datetime(val_str, format='%d %B %Y %H:%M:%S')
             except Exception:
-                return None
+                try:
+                    return pd.to_datetime(val)
+                except Exception:
+                    return None
 
         for _, row in df.iterrows():
             bulten_no = str(row.get('Bülten Numarası', '')).strip()
@@ -547,26 +570,26 @@ def export_excel_all():
             'Hafta': ariza.hafta,
             'Bölge': ariza.bolge,
             'Bülten Numarası': ariza.bulten_no,
-            'İL': ariza.il,
+            'İl': ariza.il,
             'Güzergah': ariza.guzergah,
-            'Koordinat A': ariza.kordinat_a,
-            'Koordinat B': ariza.kordinat_b,
-            'Servis Etkisi (H)': ariza.serivs_etkisi,
+            'KORDİNAT A': ariza.kordinat_a,
+            'KORDİNAT B': ariza.kordinat_b,
+            'ETKİLENEN SERVİS BİLGİLERİ': ariza.serivs_etkisi,
             'Lokasyon': ariza.lokasyon,
-            'Arıza Başlangıç': ariza.ariza_baslangic.strftime('%Y-%m-%d %H:%M') if ariza.ariza_baslangic else '',
-            'Arıza Bitiş': ariza.ariza_bitis.strftime('%Y-%m-%d %H:%M') if ariza.ariza_bitis else '',
-            'Kablo Tipi': ariza.kablo_tipi,
-            'HAGS Süresi': ariza.hags_suresi,
-            'Kesinti Süresi': ariza.kesinti_suresi,
+            'Arıza Başlangıç': ariza.ariza_baslangic.strftime('%d %B %Y %H:%M:%S') if ariza.ariza_baslangic else '',
+            'Arıza Bitiş': ariza.ariza_bitis.strftime('%d %B %Y %H:%M:%S') if ariza.ariza_bitis else '',
+            'KABLO TİPİ': ariza.kablo_tipi,
+            'HAGS SÜRESİ': ariza.hags_suresi,
+            'KESİNTİ SÜRESİ': ariza.kesinti_suresi,
             'Arıza Konsolide Kök Neden': ariza.ariza_konsolide,
             'Arıza Kök Neden': ariza.ariza_kok_neden,
-            'HAGS Aşıldı mı': ariza.hags_asildi_mi,
+            'HAGS Aşıldı mı?': ariza.hags_asildi_mi,
             'Refakat Durumu': ariza.refakat_durumu,
             'Servis Etkisi': ariza.servis_etkisi,
             'Arıza Süresi': ariza.ariza_suresi,
-            'Kalıcı Çözüm': ariza.kalici_cozum,
-            'Kullanılan Malzeme': ariza.kullanilan_malzeme,
-            'Açıklama': ariza.aciklama
+            'KALICI ÇÖZÜM SAĞLANDI': ariza.kalici_cozum,
+            'KULLANILAN MALZEME': ariza.kullanilan_malzeme,
+            'AÇIKLAMA': ariza.aciklama
         })
     
     df = pd.DataFrame(data)

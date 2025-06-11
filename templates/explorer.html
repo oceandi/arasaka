@@ -8,7 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <!-- Google Maps API - API_KEY'i kendi anahtarınızla değiştirin -->
+    <!-- Google Maps API -->
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyANpGORy7eoWhHRnWBLxScytWpj1Xegsz8&callback=initMap"></script>
     <style>
         :root {
@@ -608,8 +608,9 @@
         .dropdown-content {
             display: none;
             position: absolute;
+            right: 0;
             background-color: var(--card-bg);
-            min-width: 160px;
+            min-width: 140px;
             box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
             z-index: 1;
             border-radius: 4px;
@@ -618,9 +619,10 @@
         
         .dropdown-content a {
             color: var(--text-color);
-            padding: 12px 16px;
+            padding: 8px 12px;
             text-decoration: none;
             display: block;
+            font-size: 13px;
         }
         
         .dropdown-content a:hover {
@@ -866,7 +868,11 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="hags">HAGS Aşıldı mı?</label>
-                            <input type="text" id="hags" name="hags" placeholder="Evet/Hayır">
+                            <select id="hags" name="hags">
+                                <option value="">Seçiniz</option>
+                                <option value="Evet">Evet</option>
+                                <option value="Hayır">Hayır</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label for="servisEtkisi">Servis Etkisi</label>
@@ -879,8 +885,12 @@
                             <input type="text" id="arizaSuresi" name="arizaSuresi">
                         </div>
                         <div class="form-group">
-                            <label for="kaliciCozum">Kalıcı Çözüm</label>
-                            <input type="text" id="kaliciCozum" name="kaliciCozum" placeholder="Evet/Hayır">
+                            <label for="kaliciCozum">Kalıcı Çözüm Sağlandı</label>
+                            <select id="kaliciCozum" name="kaliciCozum">
+                                <option value="">Seçiniz</option>
+                                <option value="Evet">Evet</option>
+                                <option value="Hayır">Hayır</option>
+                            </select>
                         </div>
                     </div>
                     <div class="form-row">
@@ -947,7 +957,8 @@
         }
         
         // Initialize Google Maps
-        function initMap() {
+        window.initMap = function() {
+            console.log("Google Maps API yüklendi");
             map = new google.maps.Map(document.getElementById("map"), {
                 center: { lat: 40.1885, lng: 29.0610 }, // Bursa koordinatları
                 zoom: 10,
