@@ -8,6 +8,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <!-- Google Maps API - API_KEY'i kendi anahtarınızla değiştirin -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyANpGORy7eoWhHRnWBLxScytWpj1Xegsz8&callback=initMap"></script>
     <style>
         :root {
             --primary-color: #1e3a8a;
@@ -219,6 +221,54 @@
         
         .chart-wrapper {
             height: 250px;
+        }
+        
+        /* Google Maps için stil */
+        #map {
+            height: 400px;
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .map-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .map-card h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .map-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .map-controls button {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .map-controls button:hover {
+            background-color: var(--primary-color);
         }
         
         .data-table {
@@ -548,6 +598,38 @@
             background-color: var(--border-color);
             border-radius: 4px;
         }
+        
+        /* Dropdown menu style */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: var(--card-bg);
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .dropdown-content a {
+            color: var(--text-color);
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .dropdown-content a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -555,16 +637,14 @@
         <div class="sidebar">
             <div class="logo">
                 <h1>AIRFOD</h1>
-                <div class="subtitle">Network Dashboard v1</div>
+                <div class="subtitle">Network Dashboard v2</div>
             </div>
             <div class="menu">
                 <ul>
                     <li><a href="#" class="active"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                    <li><a href="#" onclick="showMapView()"><i class="fas fa-map-marked-alt"></i> Harita Görünümü</a></li>
                     <li><a href="#"><i class="fas fa-network-wired"></i> Fiber Arızalar</a></li>
-                    <li><a href="#"><i class="fas fa-map-marked-alt"></i> FS Rollout</a></li>
-                    <li><a href="#"><i class="fas fa-users"></i> Bireysel Rollout</a></li>
-                    <li><a href="#"><i class="fas fa-tools"></i> Deplase / Islah</a></li>
-                    <li><a href="#"><i class="fas fa-list-alt"></i> Fiber Kalite</a></li>
+                    <li><a href="#"><i class="fas fa-download"></i> Raporlar</a></li>
                 </ul>
             </div>
         </div>
@@ -572,7 +652,7 @@
             <div class="header">
                 <h2>Fiber Arıza Özeti</h2>
                 <div class="user-info">
-                    <span>Son güncelleme: <span id="lastUpdate">21.05.2025 09:45:28</span></span>
+                    <span>Son güncelleme: <span id="lastUpdate">-</span></span>
                 </div>
             </div>
             
@@ -617,22 +697,38 @@
                 </div>
                 <div class="stat-card success">
                     <div class="icon">
-                        <i class="fas fa-users-cog"></i>
+                        <i class="fas fa-check-circle"></i>
                     </div>
                     <div class="info">
-                        <h3 id="serviceCount">0</h3>
-                        <p>Servis Etkili Arıza Sayısı</p>
+                        <h3 id="solvedCount">0</h3>
+                        <p>Çözülen Arıza Sayısı</p>
                     </div>
                 </div>
                 <div class="stat-card danger">
                     <div class="icon">
-                        <i class="fas fa-city"></i>
+                        <i class="fas fa-map-marker-alt"></i>
                     </div>
                     <div class="info">
-                        <h3 id="cityCount">0</h3>
-                        <p>Şehir İçi Arıza Sayısı</p>
+                        <h3 id="locationCount">0</h3>
+                        <p>Koordinatlı Arıza Sayısı</p>
                     </div>
                 </div>
+            </div>
+            
+            <!-- Google Maps Harita -->
+            <div class="map-card" id="mapCard" style="display: none;">
+                <h3>
+                    Arıza Haritası
+                    <div class="action-buttons">
+                        <button onclick="toggleMapView()"><i class="fas fa-eye"></i> Gizle</button>
+                    </div>
+                </h3>
+                <div class="map-controls">
+                    <button onclick="filterMap('all')"><i class="fas fa-globe"></i> Tümü</button>
+                    <button onclick="filterMap('solved')"><i class="fas fa-check"></i> Çözülenler</button>
+                    <button onclick="filterMap('unsolved')"><i class="fas fa-times"></i> Çözülmeyenler</button>
+                </div>
+                <div id="map"></div>
             </div>
             
             <div class="charts-container">
@@ -643,9 +739,9 @@
                     </div>
                 </div>
                 <div class="chart-card">
-                    <h3>Önceki Yıllara Göre Arıza Trendleri</h3>
+                    <h3>Arıza Çözüm Durumu</h3>
                     <div class="chart-wrapper">
-                        <canvas id="trendChart"></canvas>
+                        <canvas id="solutionChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -655,7 +751,15 @@
                     Fiber Arıza Listesi
                     <div class="action-buttons">
                         <button id="addNewBtn"><i class="fas fa-plus"></i> Yeni Ekle</button>
-                        <button id="exportExcelBtn"><i class="fas fa-file-export"></i> Dışa Aktar</button>
+                        <div class="dropdown">
+                            <button><i class="fas fa-file-export"></i> Dışa Aktar</button>
+                            <div class="dropdown-content">
+                                <a href="/export_excel_all"><i class="fas fa-file-excel"></i> Excel (Tümü)</a>
+                                <a href="/export_kmz/all"><i class="fas fa-globe-americas"></i> KMZ (Tümü)</a>
+                                <a href="/export_kmz/solved"><i class="fas fa-check-circle"></i> KMZ (Çözülenler)</a>
+                                <a href="/export_kmz/unsolved"><i class="fas fa-times-circle"></i> KMZ (Çözülmeyenler)</a>
+                            </div>
+                        </div>
                     </div>
                 </h3>
                 <div class="table-wrapper">
@@ -716,7 +820,7 @@
                         </div>
                         <div class="form-group">
                             <label for="bultenNo">Bülten Numarası</label>
-                            <input type="text" id="bultenNo" name="bultenNo" required readonly>
+                            <input type="text" id="bultenNo" name="bultenNo" required>
                         </div>
                     </div>
                     <div class="form-row">
@@ -731,12 +835,12 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="kordinatA">KORDİNAT A</label>
-                            <input type="text" id="kordinatA" name="kordinatA">
+                            <label for="kordinatA">KORDİNAT A (Enlem)</label>
+                            <input type="text" id="kordinatA" name="kordinatA" placeholder="Örnek: 40.123456">
                         </div>
                         <div class="form-group">
-                            <label for="kordinatB">KORDİNAT B</label>
-                            <input type="text" id="kordinatB" name="kordinatB">
+                            <label for="kordinatB">KORDİNAT B (Boylam)</label>
+                            <input type="text" id="kordinatB" name="kordinatB" placeholder="Örnek: 29.123456">
                         </div>
                     </div>
                     <div class="form-row">
@@ -752,45 +856,31 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="kabloTipi">Kablo Tipi</label>
-                            <select id="kabloTipi" name="kabloTipi" required>
-                                <option value="">Seçiniz</option>
-                                <option value="ADSS">ADSS</option>
-                                <option value="Duct">Duct</option>
-                                <option value="Aerial">Aerial</option>
-                            </select>
+                            <input type="text" id="kabloTipi" name="kabloTipi" placeholder="ADSS, Duct, Aerial vb.">
                         </div>
                         <div class="form-group">
                             <label for="kokNeden">Kök Neden</label>
-                            <select id="kokNeden" name="kokNeden" required>
-                                <option value="">Seçiniz</option>
-                                <option value="Doğal Afet">Doğal Afet</option>
-                                <option value="İnsan Kaynaklı">İnsan Kaynaklı</option>
-                                <option value="Diğer">Diğer</option>
-                            </select>
+                            <input type="text" id="kokNeden" name="kokNeden" placeholder="Doğal Afet, İnsan Kaynaklı vb.">
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="hags">HAGS</label>
-                            <input type="text" id="hags" name="hags">
+                            <label for="hags">HAGS Aşıldı mı?</label>
+                            <input type="text" id="hags" name="hags" placeholder="Evet/Hayır">
                         </div>
                         <div class="form-group">
                             <label for="servisEtkisi">Servis Etkisi</label>
-                            <select id="servisEtkisi" name="servisEtkisi" required>
-                                <option value="">Seçiniz</option>
-                                <option value="Evet">Evet</option>
-                                <option value="Hayır">Hayır</option>
-                            </select>
+                            <input type="text" id="servisEtkisi" name="servisEtkisi" placeholder="Evet/Hayır">
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="arizaSuresi">Arıza Süresi (saat)</label>
-                            <input type="number" id="arizaSuresi" name="arizaSuresi" required>
+                            <input type="text" id="arizaSuresi" name="arizaSuresi">
                         </div>
                         <div class="form-group">
-                            <label for="kaliciCozum">Kalıcı Çözüm Sağlandı</label>
-                            <input type="checkbox" id="kaliciCozum" name="kaliciCozum">
+                            <label for="kaliciCozum">Kalıcı Çözüm</label>
+                            <input type="text" id="kaliciCozum" name="kaliciCozum" placeholder="Evet/Hayır">
                         </div>
                     </div>
                     <div class="form-row">
@@ -826,7 +916,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="aciklama">Açıklama</label>
-                            <textarea id="aciklama" name="aciklama" rows="2"></textarea>
+                            <textarea id="aciklama" name="aciklama" rows="3"></textarea>
                         </div>
                         <div class="form-group">
                             <label for="serivsEtkisi">Servis Etkisi (Detay)</label>
@@ -846,6 +936,97 @@
         let sampleData = [];
         let currentPage = 1;
         const rowsPerPage = 10;
+        let map = null;
+        let markers = [];
+        let currentFilter = 'all';
+
+        // Update last update time
+        function updateLastTime() {
+            const now = new Date();
+            document.getElementById('lastUpdate').innerText = now.toLocaleString('tr-TR');
+        }
+        
+        // Initialize Google Maps
+        function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: 40.1885, lng: 29.0610 }, // Bursa koordinatları
+                zoom: 10,
+            });
+            
+            // Harita hazır olduğunda verileri yükle
+            loadMapData();
+        }
+        
+        // Load map data
+        async function loadMapData() {
+            if (!map) return;
+            
+            const response = await fetch('/api/map_data');
+            const data = await response.json();
+            
+            // Mevcut markerları temizle
+            markers.forEach(marker => marker.setMap(null));
+            markers = [];
+            
+            data.forEach(item => {
+                if (currentFilter === 'solved' && item.kaliciCozum !== 'Evet') return;
+                if (currentFilter === 'unsolved' && item.kaliciCozum === 'Evet') return;
+                
+                const marker = new google.maps.Marker({
+                    position: { lat: item.lat, lng: item.lng },
+                    map: map,
+                    title: item.title,
+                    icon: item.kaliciCozum === 'Evet' ? 
+                        'http://maps.google.com/mapfiles/ms/icons/green-dot.png' : 
+                        'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
+                });
+                
+                const infoWindow = new google.maps.InfoWindow({
+                    content: `
+                        <div style="color: black;">
+                            <h3>${item.title}</h3>
+                            <p><b>Hafta:</b> ${item.hafta}</p>
+                            <p><b>Bölge:</b> ${item.bolge}</p>
+                            <p><b>İl:</b> ${item.il}</p>
+                            <p><b>Güzergah:</b> ${item.guzergah}</p>
+                            <p><b>Lokasyon:</b> ${item.lokasyon}</p>
+                            <p><b>Kök Neden:</b> ${item.kokNeden}</p>
+                            <p><b>Kalıcı Çözüm:</b> ${item.kaliciCozum}</p>
+                            <p><b>Açıklama:</b> ${item.aciklama || 'Yok'}</p>
+                            <button onclick="openEditModal(${item.id})" style="background: #3b82f6; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Düzenle</button>
+                        </div>
+                    `
+                });
+                
+                marker.addListener("click", () => {
+                    infoWindow.open(map, marker);
+                });
+                
+                markers.push(marker);
+            });
+        }
+        
+        // Filter map
+        function filterMap(filter) {
+            currentFilter = filter;
+            loadMapData();
+        }
+        
+        // Show/hide map
+        function showMapView() {
+            document.getElementById('mapCard').style.display = 'block';
+            if (map) {
+                google.maps.event.trigger(map, 'resize');
+            }
+        }
+        
+        function toggleMapView() {
+            const mapCard = document.getElementById('mapCard');
+            mapCard.style.display = mapCard.style.display === 'none' ? 'block' : 'none';
+            if (map && mapCard.style.display === 'block') {
+                google.maps.event.trigger(map, 'resize');
+            }
+        }
 
         // Fetch and display data
         async function fetchData() {
@@ -853,18 +1034,21 @@
             sampleData = await response.json();
             updateDashboardStats();
             renderTable();
+            updateCharts();
+            updateLastTime();
+            if (map) loadMapData();
         }
 
         function updateDashboardStats() {
             const totalCount = sampleData.length;
-            const hagsCount = sampleData.filter(item => item.hags).length;
-            const serviceCount = sampleData.filter(item => item.servisEtkisi === 'Evet').length;
-            const cityCount = sampleData.filter(item => item.bolge === 'Şehir İçi').length;
+            const hagsCount = sampleData.filter(item => item.hagsAsildi === 'Evet').length;
+            const solvedCount = sampleData.filter(item => item.kaliciCozum === 'Evet').length;
+            const locationCount = sampleData.filter(item => item.kordinatA && item.kordinatB).length;
 
             document.getElementById('totalCount').innerText = totalCount;
             document.getElementById('hagsCount').innerText = hagsCount;
-            document.getElementById('serviceCount').innerText = serviceCount;
-            document.getElementById('cityCount').innerText = cityCount;
+            document.getElementById('solvedCount').innerText = solvedCount;
+            document.getElementById('locationCount').innerText = locationCount;
         }
 
         function renderTable() {
@@ -886,14 +1070,14 @@
                     <td>${item.guzergah}</td>
                     <td>${item.kordinatA}</td>
                     <td>${item.kordinatB}</td>
-                    <td>${item.arizaBaslangic ? new Date(item.arizaBaslangic).toLocaleString() : ''}</td>
-                    <td>${item.arizaBitis ? new Date(item.arizaBitis).toLocaleString() : ''}</td>
+                    <td>${item.arizaBaslangic ? new Date(item.arizaBaslangic).toLocaleString('tr-TR') : ''}</td>
+                    <td>${item.arizaBitis ? new Date(item.arizaBitis).toLocaleString('tr-TR') : ''}</td>
                     <td>${item.kabloTipi}</td>
-                    <td>${item.kokNeden}</td>
-                    <td>${item.hags ? 'Evet' : 'Hayır'}</td>
-                    <td>${item.servisEtkisi === 'Evet' ? 'Evet' : 'Hayır'}</td>
+                    <td>${item.arizaKokNeden}</td>
+                    <td>${item.hagsAsildi}</td>
+                    <td>${item.servisEtkiDurum}</td>
                     <td>${item.arizaSuresi}</td>
-                    <td>${item.kaliciCozum}</td>
+                    <td><span class="status-badge ${item.kaliciCozum === 'Evet' ? 'status-ok' : 'status-warning'}">${item.kaliciCozum || 'Hayır'}</span></td>
                     <td class="action-cell">
                         <button class="edit" onclick="openEditModal(${item.id})"><i class="fas fa-edit"></i> Düzenle</button>
                         <button class="delete" onclick="deleteRecord(${item.id})"><i class="fas fa-trash"></i> Sil</button>
@@ -921,6 +1105,61 @@
                 paginationContainer.appendChild(button);
             }
         }
+        
+        function updateCharts() {
+            // Bölgesel dağılım
+            const regionCounts = {};
+            sampleData.forEach(item => {
+                regionCounts[item.bolge] = (regionCounts[item.bolge] || 0) + 1;
+            });
+            
+            const regionChart = document.getElementById('regionChart').getContext('2d');
+            new Chart(regionChart, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(regionCounts),
+                    datasets: [{
+                        label: 'Arıza Sayısı',
+                        data: Object.values(regionCounts),
+                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+            
+            // Çözüm durumu
+            const solved = sampleData.filter(item => item.kaliciCozum === 'Evet').length;
+            const unsolved = sampleData.length - solved;
+            
+            const solutionChart = document.getElementById('solutionChart').getContext('2d');
+            new Chart(solutionChart, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Çözülen', 'Çözülmeyen'],
+                    datasets: [{
+                        data: [solved, unsolved],
+                        backgroundColor: [
+                            'rgba(34, 197, 94, 0.5)',
+                            'rgba(239, 68, 68, 0.5)'
+                        ],
+                        borderColor: [
+                            'rgba(34, 197, 94, 1)',
+                            'rgba(239, 68, 68, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
 
         function openEditModal(id) {
             const item = sampleData.find(item => item.id === id);
@@ -930,32 +1169,42 @@
                 document.getElementById('hafta').value = item.hafta || '';
                 document.getElementById('bolge').value = item.bolge || '';
                 document.getElementById('bultenNo').value = item.bultenNo || '';
+                document.getElementById('bultenNo').readOnly = true; // Düzenleme modunda readonly
                 document.getElementById('il').value = item.il || '';
                 document.getElementById('guzergah').value = item.guzergah || '';
                 document.getElementById('kordinatA').value = item.kordinatA || '';
                 document.getElementById('kordinatB').value = item.kordinatB || '';
-                document.getElementById('baslangicTarihi').value = item.arizaBaslangic
-                    ? new Date(item.arizaBaslangic).toISOString().slice(0, 16)
-                    : '';
-                document.getElementById('bitisTarihi').value = item.arizaBitis
-                    ? new Date(item.arizaBitis).toISOString().slice(0, 16)
-                    : '';
+                
+                // Tarih formatını düzelt
+                if (item.arizaBaslangic) {
+                    const date = new Date(item.arizaBaslangic);
+                    document.getElementById('baslangicTarihi').value = date.toISOString().slice(0, 16);
+                } else {
+                    document.getElementById('baslangicTarihi').value = '';
+                }
+                
+                if (item.arizaBitis) {
+                    const date = new Date(item.arizaBitis);
+                    document.getElementById('bitisTarihi').value = date.toISOString().slice(0, 16);
+                } else {
+                    document.getElementById('bitisTarihi').value = '';
+                }
+                
                 document.getElementById('kabloTipi').value = item.kabloTipi || '';
-                document.getElementById('kokNeden').value = item.kokNeden || '';
-                document.getElementById('hags').value = item.hags || '';
-                document.getElementById('servisEtkisi').value = item.servisEtkisi || '';
+                document.getElementById('kokNeden').value = item.arizaKokNeden || '';
+                document.getElementById('hags').value = item.hagsAsildi || '';
+                document.getElementById('servisEtkisi').value = item.servisEtkiDurum || '';
                 document.getElementById('arizaSuresi').value = item.arizaSuresi || '';
-                document.getElementById('kaliciCozum').checked = !!item.kaliciCozum;
-
-                // Eksik olan 9 alanı da ekleyin:
-                if (document.getElementById('arizaKonsolide')) document.getElementById('arizaKonsolide').value = item.arizaKonsolide || '';
-                if (document.getElementById('lokasyon')) document.getElementById('lokasyon').value = item.lokasyon || '';
-                if (document.getElementById('refakatDurumu')) document.getElementById('refakatDurumu').value = item.refakatDurumu || '';
-                if (document.getElementById('hagsSuresi')) document.getElementById('hagsSuresi').value = item.hagsSuresi || '';
-                if (document.getElementById('kesintiSuresi')) document.getElementById('kesintiSuresi').value = item.kesintiSuresi || '';
-                if (document.getElementById('kullanilanMalzeme')) document.getElementById('kullanilanMalzeme').value = item.kullanilanMalzeme || '';
-                if (document.getElementById('aciklama')) document.getElementById('aciklama').value = item.aciklama || '';
-                if (document.getElementById('serivsEtkisi')) document.getElementById('serivsEtkisi').value = item.serivsEtkisi || '';
+                document.getElementById('kaliciCozum').value = item.kaliciCozum || '';
+                document.getElementById('arizaKonsolide').value = item.arizaKonsolide || '';
+                document.getElementById('lokasyon').value = item.lokasyon || '';
+                document.getElementById('refakatDurumu').value = item.refakatDurumu || '';
+                document.getElementById('hagsSuresi').value = item.hagsSuresi || '';
+                document.getElementById('kesintiSuresi').value = item.kesintiSuresi || '';
+                document.getElementById('kullanilanMalzeme').value = item.kullanilanMalzeme || '';
+                document.getElementById('aciklama').value = item.aciklama || '';
+                document.getElementById('serivsEtkisi').value = item.servisEtkisi || '';
+                
                 const modal = document.getElementById('detail-modal');
                 modal.style.display = 'block';
                 setTimeout(() => document.getElementById('hafta').focus(), 100);
@@ -966,7 +1215,7 @@
             document.getElementById('modalTitle').innerText = 'Yeni Fiber Arıza Ekle';
             document.getElementById('detailForm').reset();
             document.getElementById('rowId').value = '';
-            document.getElementById('bultenNo').readOnly = false; // yeni kayıtta düzenlenebilir
+            document.getElementById('bultenNo').readOnly = false; // Yeni kayıtta düzenlenebilir
             document.getElementById('detail-modal').style.display = 'block';
         }
 
@@ -974,29 +1223,13 @@
             e.preventDefault();
             const formData = new FormData(document.getElementById('detailForm'));
             const data = Object.fromEntries(formData);
-            data.kaliciCozum = document.getElementById('kaliciCozum').checked;
-
-            // Bülten no kontrolü (yeni kayıt için)
-            if (!data.rowId) {
-                if (sampleData.some(item => item.bultenNo === data.bultenNo)) {
-                    alert('Bu Bülten Numarası ile zaten bir kayıt var!');
-                    return;
-                }
-            }
+            
+            // ID'yi al
+            data.rowId = document.getElementById('rowId').value;
 
             // Tarihleri ISO formatına çevir
             data.baslangicTarihi = data.baslangicTarihi ? new Date(data.baslangicTarihi).toISOString() : '';
             data.bitisTarihi = data.bitisTarihi ? new Date(data.bitisTarihi).toISOString() : '';
-
-            // Eksik olan 9 alanı da ekleyin (formda varsa)
-            data.arizaKonsolide = data.arizaKonsolide || '';
-            data.lokasyon = data.lokasyon || '';
-            data.refakatDurumu = data.refakatDurumu || '';
-            data.hagsSuresi = data.hagsSuresi || '';
-            data.kesintiSuresi = data.kesintiSuresi || '';
-            data.kullanilanMalzeme = data.kullanilanMalzeme || '';
-            data.aciklama = data.aciklama || '';
-            data.serivsEtkisi = data.serivsEtkisi || '';
 
             let url = '/api/ariza';
             let method = 'POST';
@@ -1013,11 +1246,19 @@
             });
 
             if (response.ok) {
-                alert(data.rowId ? 'Kayıt güncellendi!' : 'Yeni kayıt eklendi!');
+                document.getElementById('statusMessage').innerText = data.rowId ? 'Kayıt güncellendi!' : 'Yeni kayıt eklendi!';
+                document.getElementById('statusMessage').className = 'status-message success';
+                document.getElementById('statusMessage').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('statusMessage').style.display = 'none';
+                }, 3000);
                 fetchData();
                 document.getElementById('detail-modal').style.display = 'none';
             } else {
-                alert('Kayıt işlemi başarısız!');
+                const error = await response.json();
+                document.getElementById('statusMessage').innerText = error.error || 'Kayıt işlemi başarısız!';
+                document.getElementById('statusMessage').className = 'status-message error';
+                document.getElementById('statusMessage').style.display = 'block';
             }
         }
 
@@ -1029,8 +1270,19 @@
         async function deleteRecord(id) {
             if (!confirm('Bu kaydı silmek istediğinize emin misiniz?')) return;
             const resp = await fetch(`/api/ariza/${id}`, { method: 'DELETE' });
-            if (resp.ok) fetchData();
-            else alert('Silme işlemi başarısız!');
+            if (resp.ok) {
+                document.getElementById('statusMessage').innerText = 'Kayıt silindi!';
+                document.getElementById('statusMessage').className = 'status-message success';
+                document.getElementById('statusMessage').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('statusMessage').style.display = 'none';
+                }, 3000);
+                fetchData();
+            } else {
+                document.getElementById('statusMessage').innerText = 'Silme işlemi başarısız!';
+                document.getElementById('statusMessage').className = 'status-message error';
+                document.getElementById('statusMessage').style.display = 'block';
+            }
         }
 
         document.getElementById('importArea').onclick = function() {
@@ -1086,6 +1338,9 @@
 
         // Initial data load
         fetchData();
+        
+        // Auto refresh every 5 minutes
+        setInterval(fetchData, 300000);
     </script>
 </body>
 </html>

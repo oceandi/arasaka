@@ -1,9 +1,12 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash, jsonify, send_file
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash, jsonify, send_file, Response
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import pandas as pd
+import simplekml
+from io import BytesIO
+import zipfile
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key'
@@ -290,8 +293,6 @@ def api_arizalar():
         'aciklama': a.aciklama
     } for a in arizalar])
 
-from flask import request
-
 @app.route('/api/ariza', methods=['POST'])
 def api_add_ariza():
     data = request.get_json()
@@ -331,9 +332,15 @@ def api_add_ariza():
 def api_update_ariza(id):
     data = request.get_json()
     ariza = FiberAriza.query.get_or_404(id)
-    # Sadece başka bir kayıtta aynı bülten_no varsa hata ver
-    if FiberAriza.query.filter(FiberAriza.bulten_no == data.get('bultenNo'), FiberAriza.id != id).first():
-        return jsonify({'error': 'Bu Bülten Numarası ile zaten kayıt var!'}), 400
+    
+    # SORUN BURADA ÇÖZÜLDÜ: Kendi ID'sini hariç tutuyoruz
+    existing = FiberAriza.query.filter(
+        FiberAriza.bulten_no == data.get('bultenNo'),
+        FiberAriza.id != id  # Bu satır kritik!
+    ).first()
+    
+    if existing:
+        return jsonify({'error': 'Bu Bülten Numarası ile başka bir kayıt var!'}), 400
 
     ariza.hafta = data.get('hafta')
     ariza.bolge = data.get('bolge')
@@ -377,7 +384,6 @@ def datetimeformat(value):
 def download_ariza(id):
     ariza = FiberAriza.query.get_or_404(id)
     # Burada ariza verisini bir Excel veya CSV dosyası olarak döndür
-    # Örnek:
     import pandas as pd
     from io import BytesIO
     df = pd.DataFrame([{
@@ -401,6 +407,188 @@ def edit_ariza(id):
         flash('Kayıt güncellendi', 'success')
         return redirect(url_for('browse'))
     return render_template('edit.html', ariza=ariza)
+
+# KMZ Export Fonksiyonu
+@app.route('/export_kmz/<string:export_type>')
+def export_kmz(export_type='all'):
+    """
+    KMZ dosyası olarak export et
+    export_type: 'all', 'solved', 'unsolved', veya ID
+    """
+    try:
+        # Verileri filtrele
+        if export_type == 'all':
+            arizalar = FiberAriza.query.all()
+            filename = 'tum_arizalar.kmz'
+        elif export_type == 'solved':
+            arizalar = FiberAriza.query.filter(FiberAriza.kalici_cozum == 'Evet').all()
+            filename = 'cozulen_arizalar.kmz'
+        elif export_type == 'unsolved':
+            arizalar = FiberAriza.query.filter(
+                (FiberAriza.kalici_cozum != 'Evet') | (FiberAriza.kalici_cozum == None)
+            ).all()
+            filename = 'cozulmemis_arizalar.kmz'
+        else:
+            # Tek bir arıza
+            ariza = FiberAriza.query.get_or_404(int(export_type))
+            arizalar = [ariza]
+            filename = f'ariza_{ariza.bulten_no}.kmz'
+        
+        # KML oluştur
+        kml = simplekml.Kml()
+        
+        # Stiller tanımla
+        solved_style = simplekml.Style()
+        solved_style.iconstyle.icon.href = 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
+        
+        unsolved_style = simplekml.Style()
+        unsolved_style.iconstyle.icon.href = 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
+        
+        for ariza in arizalar:
+            if ariza.kordinat_a and ariza.kordinat_b:
+                try:
+                    # Koordinatları parse et
+                    lat = float(ariza.kordinat_a.replace(',', '.'))
+                    lon = float(ariza.kordinat_b.replace(',', '.'))
+                    
+                    # Placemark oluştur
+                    pnt = kml.newpoint(name=f"Arıza #{ariza.bulten_no}")
+                    pnt.coords = [(lon, lat)]
+                    
+                    # Stil ata
+                    if ariza.kalici_cozum == 'Evet':
+                        pnt.style = solved_style
+                    else:
+                        pnt.style = unsolved_style
+                    
+                    # Açıklama ekle
+                    description = f"""
+                    <![CDATA[
+                    <b>Bülten No:</b> {ariza.bulten_no}<br>
+                    <b>Hafta:</b> {ariza.hafta}<br>
+                    <b>Bölge:</b> {ariza.bolge}<br>
+                    <b>İl:</b> {ariza.il}<br>
+                    <b>Güzergah:</b> {ariza.guzergah}<br>
+                    <b>Lokasyon:</b> {ariza.lokasyon}<br>
+                    <b>Başlangıç:</b> {ariza.ariza_baslangic}<br>
+                    <b>Bitiş:</b> {ariza.ariza_bitis}<br>
+                    <b>Kök Neden:</b> {ariza.ariza_kok_neden}<br>
+                    <b>Kalıcı Çözüm:</b> {ariza.kalici_cozum}<br>
+                    <b>Açıklama:</b> {ariza.aciklama or 'Yok'}<br>
+                    ]]>
+                    """
+                    pnt.description = description
+                    
+                except ValueError:
+                    # Geçersiz koordinat
+                    continue
+        
+        # KMZ olarak kaydet
+        output = BytesIO()
+        kml.savekmz(output)
+        output.seek(0)
+        
+        return send_file(
+            output,
+            mimetype='application/vnd.google-earth.kmz',
+            as_attachment=True,
+            download_name=filename
+        )
+        
+    except Exception as e:
+        flash(f'KMZ export hatası: {str(e)}', 'danger')
+        return redirect(url_for('browse'))
+
+# Harita API endpoint'i
+@app.route('/api/map_data')
+def api_map_data():
+    """Harita için arıza verilerini döndür"""
+    arizalar = FiberAriza.query.filter(
+        FiberAriza.kordinat_a != '',
+        FiberAriza.kordinat_b != ''
+    ).all()
+    
+    markers = []
+    for ariza in arizalar:
+        try:
+            lat = float(ariza.kordinat_a.replace(',', '.'))
+            lon = float(ariza.kordinat_b.replace(',', '.'))
+            markers.append({
+                'id': ariza.id,
+                'lat': lat,
+                'lng': lon,
+                'title': f"Arıza #{ariza.bulten_no}",
+                'bultenNo': ariza.bulten_no,
+                'hafta': ariza.hafta,
+                'bolge': ariza.bolge,
+                'il': ariza.il,
+                'guzergah': ariza.guzergah,
+                'lokasyon': ariza.lokasyon,
+                'baslangic': ariza.ariza_baslangic.isoformat() if ariza.ariza_baslangic else '',
+                'bitis': ariza.ariza_bitis.isoformat() if ariza.ariza_bitis else '',
+                'kokNeden': ariza.ariza_kok_neden,
+                'kaliciCozum': ariza.kalici_cozum,
+                'aciklama': ariza.aciklama
+            })
+        except ValueError:
+            continue
+    
+    return jsonify(markers)
+
+# Excel Export fonksiyonu (tüm data)
+@app.route('/export_excel_all')
+def export_excel_all():
+    """Tüm verileri Excel olarak export et"""
+    arizalar = FiberAriza.query.all()
+    
+    data = []
+    for ariza in arizalar:
+        data.append({
+            'Hafta': ariza.hafta,
+            'Bölge': ariza.bolge,
+            'Bülten Numarası': ariza.bulten_no,
+            'İL': ariza.il,
+            'Güzergah': ariza.guzergah,
+            'Koordinat A': ariza.kordinat_a,
+            'Koordinat B': ariza.kordinat_b,
+            'Servis Etkisi (H)': ariza.serivs_etkisi,
+            'Lokasyon': ariza.lokasyon,
+            'Arıza Başlangıç': ariza.ariza_baslangic.strftime('%Y-%m-%d %H:%M') if ariza.ariza_baslangic else '',
+            'Arıza Bitiş': ariza.ariza_bitis.strftime('%Y-%m-%d %H:%M') if ariza.ariza_bitis else '',
+            'Kablo Tipi': ariza.kablo_tipi,
+            'HAGS Süresi': ariza.hags_suresi,
+            'Kesinti Süresi': ariza.kesinti_suresi,
+            'Arıza Konsolide Kök Neden': ariza.ariza_konsolide,
+            'Arıza Kök Neden': ariza.ariza_kok_neden,
+            'HAGS Aşıldı mı': ariza.hags_asildi_mi,
+            'Refakat Durumu': ariza.refakat_durumu,
+            'Servis Etkisi': ariza.servis_etkisi,
+            'Arıza Süresi': ariza.ariza_suresi,
+            'Kalıcı Çözüm': ariza.kalici_cozum,
+            'Kullanılan Malzeme': ariza.kullanilan_malzeme,
+            'Açıklama': ariza.aciklama
+        })
+    
+    df = pd.DataFrame(data)
+    output = BytesIO()
+    
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Fiber Arızalar', index=False)
+        
+        # Sütun genişliklerini ayarla
+        worksheet = writer.sheets['Fiber Arızalar']
+        for i, col in enumerate(df.columns):
+            column_width = max(df[col].astype(str).map(len).max(), len(col)) + 2
+            worksheet.set_column(i, i, column_width)
+    
+    output.seek(0)
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'fiber_arizalar_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)
