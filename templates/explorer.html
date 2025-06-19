@@ -311,6 +311,70 @@
             background-color: var(--primary-color);
         }
         
+        /* Filtre Alanı */
+        .filter-section {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        
+        .filter-section.active {
+            display: block;
+        }
+        
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .filter-group label {
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: #94a3b8;
+        }
+        
+        .filter-group select, .filter-group input {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background-color: var(--content-bg);
+            color: var(--text-color);
+            font-size: 14px;
+        }
+        
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .filter-actions button {
+            padding: 8px 15px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .btn-apply {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .btn-clear {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
         .table-wrapper {
             overflow-x: auto;
         }
@@ -339,6 +403,55 @@
             background-color: rgba(255, 255, 255, 0.05);
         }
         
+        /* Genişletilebilir satır */
+        .expandable-row {
+            background-color: rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        
+        .expandable-row.expanded {
+            display: table-row;
+        }
+        
+        .expandable-content {
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        
+        .detail-section {
+            background-color: var(--card-bg);
+            padding: 15px;
+            border-radius: 6px;
+        }
+        
+        .detail-section h4 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: var(--accent-color);
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        
+        .detail-item .label {
+            font-weight: 600;
+            color: #94a3b8;
+        }
+        
+        .detail-item .value {
+            color: var(--text-color);
+        }
+        
         .action-cell {
             display: flex;
             gap: 10px;
@@ -357,12 +470,26 @@
             background-color: rgba(255, 255, 255, 0.1);
         }
         
-        .action-cell button.edit {
+        .action-cell button.info {
             color: var(--info-color);
+        }
+        
+        .action-cell button.edit {
+            color: var(--warning-color);
         }
         
         .action-cell button.delete {
             color: var(--danger-color);
+        }
+        
+        .expand-toggle {
+            cursor: pointer;
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+        
+        .expand-toggle:hover {
+            color: var(--info-color);
         }
         
         .modal {
@@ -379,13 +506,15 @@
         
         .modal-content {
             background-color: var(--content-bg);
-            margin: 5% auto;
+            margin: 2% auto;
             padding: 20px;
             border-radius: 8px;
-            width: 80%;
-            max-width: 800px;
+            width: 90%;
+            max-width: 1000px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             color: var(--text-color);
+            max-height: 95vh;
+            overflow-y: auto;
         }
         
         .modal-header {
@@ -413,6 +542,26 @@
             color: var(--accent-color);
         }
         
+        .form-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .form-section {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .form-section h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: var(--accent-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 5px;
+        }
+        
         .form-group {
             margin-bottom: 15px;
         }
@@ -428,7 +577,7 @@
             padding: 10px;
             border-radius: 4px;
             border: 1px solid var(--border-color);
-            background-color: var(--card-bg);
+            background-color: var(--content-bg);
             color: var(--text-color);
             font-size: 14px;
         }
@@ -443,6 +592,7 @@
         }
         
         .form-actions {
+            grid-column: 1 / -1;
             display: flex;
             justify-content: flex-end;
             gap: 10px;
@@ -577,26 +727,6 @@
             opacity: 0;
             overflow: hidden;
             z-index: -1;
-        }
-        
-        #detail-modal .form-container {
-            max-height: 60vh;
-            overflow-y: auto;
-            padding-right: 10px;
-        }
-        
-        #detail-modal .form-container::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        #detail-modal .form-container::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 4px;
-        }
-        
-        #detail-modal .form-container::-webkit-scrollbar-thumb {
-            background-color: var(--border-color);
-            border-radius: 4px;
         }
         
         /* Dropdown menu style */
@@ -752,11 +882,12 @@
                 <h3>
                     Fiber Arıza Listesi
                     <div class="action-buttons">
+                        <button id="toggleFilterBtn"><i class="fas fa-filter"></i> Filtrele</button>
                         <button id="addNewBtn"><i class="fas fa-plus"></i> Yeni Ekle</button>
                         <div class="dropdown">
                             <button><i class="fas fa-file-export"></i> Dışa Aktar</button>
                             <div class="dropdown-content">
-                                <a href="/export_excel_all"><i class="fas fa-file-excel"></i> Excel (Tümü)</a>
+                                <a href="/export_excel_all"><i class="fas fa-file-excel"></i> Excel (28 Sütun)</a>
                                 <a href="/export_kmz/all"><i class="fas fa-globe-americas"></i> KMZ (Tümü)</a>
                                 <a href="/export_kmz/solved"><i class="fas fa-check-circle"></i> KMZ (Çözülenler)</a>
                                 <a href="/export_kmz/unsolved"><i class="fas fa-times-circle"></i> KMZ (Çözülmeyenler)</a>
@@ -764,38 +895,76 @@
                         </div>
                     </div>
                 </h3>
-                <!-- FİLTRE ALANLARI EKLE -->
-                <div style="margin-bottom:10px;display:flex;gap:10px;">
-                    <select id="filterBolge">
-                        <option value="">Tüm Bölgeler</option>
-                    </select>
-                    <select id="filterKaliciCozum">
-                        <option value="">Tümü</option>
-                        <option value="Evet">Çözülen</option>
-                        <option value="Hayır">Çözülmeyen</option>
-                    </select>
-                    <button onclick="applyFilters()" style="padding:5px 15px;">Filtrele</button>
-                    <button onclick="resetFilters()" style="padding:5px 15px;">Temizle</button>
+                
+                <!-- Filtre Bölümü -->
+                <div class="filter-section" id="filterSection">
+                    <div class="filter-grid">
+                        <div class="filter-group">
+                            <label for="filterBolge">Bölge</label>
+                            <select id="filterBolge">
+                                <option value="">Tümü</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filterIl">İl</label>
+                            <select id="filterIl">
+                                <option value="">Tümü</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filterKaliciCozum">Kalıcı Çözüm</label>
+                            <select id="filterKaliciCozum">
+                                <option value="">Tümü</option>
+                                <option value="Evet">Evet</option>
+                                <option value="Hayır">Hayır</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filterHags">HAGS Aşıldı mı?</label>
+                            <select id="filterHags">
+                                <option value="">Tümü</option>
+                                <option value="Evet">Evet</option>
+                                <option value="Hayır">Hayır</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filterServisEtkisi">Servis Etkisi</label>
+                            <select id="filterServisEtkisi">
+                                <option value="">Tümü</option>
+                                <option value="Var">Var</option>
+                                <option value="Yok">Yok</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filterBultenNo">Bülten No</label>
+                            <input type="text" id="filterBultenNo" placeholder="Bülten numarası...">
+                        </div>
+                    </div>
+                    <div class="filter-actions">
+                        <button class="btn-apply" onclick="applyFilters()"><i class="fas fa-check"></i> Uygula</button>
+                        <button class="btn-clear" onclick="clearFilters()"><i class="fas fa-times"></i> Temizle</button>
+                    </div>
                 </div>
+                
                 <div class="table-wrapper">
                     <table id="dataTable">
                         <thead>
                             <tr>
+                                <th style="width: 30px;"></th>
+                                <!-- Sadece Input Verileri (İlk 14 Sütun) -->
                                 <th>Hafta</th>
                                 <th>Bölge</th>
                                 <th>Bülten Numarası</th>
                                 <th>İL</th>
                                 <th>Güzergah</th>
-                                <th>KORDİNAT A</th>
-                                <th>KORDİNAT B</th>
+                                <th>Lokasyon</th>
                                 <th>Arıza Başlangıç</th>
                                 <th>Arıza Bitiş</th>
-                                <th>Kablo Tipi</th>
                                 <th>Kök Neden</th>
-                                <th>HAGS</th>
+                                <th>HAGS Aşıldı mı</th>
+                                <th>Refakat Durumu</th>
                                 <th>Servis Etkisi</th>
                                 <th>Arıza Süresi</th>
-                                <th>Kalıcı Çözüm</th>
                                 <th>İşlemler</th>
                             </tr>
                         </thead>
@@ -808,7 +977,7 @@
                     <!-- Pagination will be populated by JS -->
                 </div>
                 <div class="mb-2">
-                    <b>Toplam Kayıt:</b> {{ total }}
+                    <b>Toplam Kayıt:</b> <span id="totalRecords">{{ total }}</span>
                 </div>
             </div>
         </div>
@@ -824,7 +993,10 @@
             <div class="form-container">
                 <form id="detailForm">
                     <input type="hidden" id="rowId">
-                    <div class="form-row">
+                    
+                    <!-- İlk 14 Sütun - Input Verileri -->
+                    <div class="form-section">
+                        <h3>Input Verileri (İlk 14 Sütun)</h3>
                         <div class="form-group">
                             <label for="hafta">Hafta</label>
                             <input type="text" id="hafta" name="hafta" required>
@@ -837,28 +1009,18 @@
                             <label for="bultenNo">Bülten Numarası</label>
                             <input type="text" id="bultenNo" name="bultenNo" required>
                         </div>
-                    </div>
-                    <div class="form-row">
                         <div class="form-group">
                             <label for="il">İL</label>
                             <input type="text" id="il" name="il" required>
                         </div>
                         <div class="form-group">
                             <label for="guzergah">Güzergah</label>
-                            <input type="text" id="guzergah" name="guzergah" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="kordinatA">KORDİNAT A (Enlem)</label>
-                            <input type="text" id="kordinatA" name="kordinatA" placeholder="Örnek: 40.123456">
+                            <input type="text" id="guzergah" name="guzergah">
                         </div>
                         <div class="form-group">
-                            <label for="kordinatB">KORDİNAT B (Boylam)</label>
-                            <input type="text" id="kordinatB" name="kordinatB" placeholder="Örnek: 29.123456">
+                            <label for="lokasyon">Lokasyon</label>
+                            <input type="text" id="lokasyon" name="lokasyon">
                         </div>
-                    </div>
-                    <div class="form-row">
                         <div class="form-group">
                             <label for="baslangicTarihi">Arıza Başlangıç</label>
                             <input type="datetime-local" id="baslangicTarihi" name="baslangicTarihi">
@@ -867,18 +1029,14 @@
                             <label for="bitisTarihi">Arıza Bitiş</label>
                             <input type="datetime-local" id="bitisTarihi" name="bitisTarihi">
                         </div>
-                    </div>
-                    <div class="form-row">
                         <div class="form-group">
-                            <label for="kabloTipi">Kablo Tipi</label>
-                            <input type="text" id="kabloTipi" name="kabloTipi" placeholder="ADSS, Duct, Aerial vb.">
+                            <label for="arizaKonsolide">Arıza Konsolide Kök Neden</label>
+                            <input type="text" id="arizaKonsolide" name="arizaKonsolide">
                         </div>
                         <div class="form-group">
-                            <label for="kokNeden">Kök Neden</label>
-                            <input type="text" id="kokNeden" name="kokNeden" placeholder="Doğal Afet, İnsan Kaynaklı vb.">
+                            <label for="kokNeden">Arıza Kök Neden</label>
+                            <input type="text" id="kokNeden" name="kokNeden">
                         </div>
-                    </div>
-                    <div class="form-row">
                         <div class="form-group">
                             <label for="hags">HAGS Aşıldı mı?</label>
                             <select id="hags" name="hags">
@@ -888,64 +1046,100 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="servisEtkisi">Servis Etkisi</label>
-                            <input type="text" id="servisEtkisi" name="servisEtkisi" placeholder="Evet/Hayır">
+                            <label for="refakatDurumu">Refakat Durumu</label>
+                            <select id="refakatDurumu" name="refakatDurumu">
+                                <option value="">Seçiniz</option>
+                                <option value="Evet">Evet</option>
+                                <option value="Hayır">Hayır</option>
+                            </select>
                         </div>
-                    </div>
-                    <div class="form-row">
                         <div class="form-group">
-                            <label for="arizaSuresi">Arıza Süresi (saat)</label>
+                            <label for="servisEtkisi">Servis Etkisi</label>
+                            <select id="servisEtkisi" name="servisEtkisi">
+                                <option value="">Seçiniz</option>
+                                <option value="Var">Var</option>
+                                <option value="Yok">Yok</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="arizaSuresi">Arıza Süresi</label>
                             <input type="text" id="arizaSuresi" name="arizaSuresi">
                         </div>
+                    </div>
+                    
+                    <!-- Son 14 Sütun - Düzenlenebilir Alanlar -->
+                    <div class="form-section">
+                        <h3>Düzenlenebilir Alanlar (Son 14 Sütun)</h3>
                         <div class="form-group">
-                            <label for="kaliciCozum">Kalıcı Çözüm Sağlandı</label>
+                            <label for="kordinatA">KORDİNAT A (Enlem)</label>
+                            <input type="text" id="kordinatA" name="kordinatA" placeholder="Örnek: 40.123456">
+                        </div>
+                        <div class="form-group">
+                            <label for="kordinatB">KORDİNAT B (Boylam)</label>
+                            <input type="text" id="kordinatB" name="kordinatB" placeholder="Örnek: 29.123456">
+                        </div>
+                        <div class="form-group">
+                            <label for="etkilenenServisBilgileri">Etkilenen Servis Bilgileri</label>
+                            <textarea id="etkilenenServisBilgileri" name="etkilenenServisBilgileri" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="kabloTipi">KABLO TİPİ</label>
+                            <input type="text" id="kabloTipi" name="kabloTipi" placeholder="ADSS, Duct, Aerial vb.">
+                        </div>
+                        <div class="form-group">
+                            <label for="hagsSuresi">HAGS SÜRESİ</label>
+                            <input type="text" id="hagsSuresi" name="hagsSuresi">
+                        </div>
+                        <div class="form-group">
+                            <label for="kesintiSuresi">KESİNTİ SÜRESİ</label>
+                            <input type="text" id="kesintiSuresi" name="kesintiSuresi">
+                        </div>
+                        <div class="form-group">
+                            <label for="kaliciCozum">KALICI ÇÖZÜM SAĞLANDI MI</label>
                             <select id="kaliciCozum" name="kaliciCozum">
                                 <option value="">Seçiniz</option>
                                 <option value="Evet">Evet</option>
                                 <option value="Hayır">Hayır</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="form-row">
                         <div class="form-group">
-                            <label for="arizaKonsolide">Arıza Konsolide Kök Neden</label>
-                            <input type="text" id="arizaKonsolide" name="arizaKonsolide">
-                        </div>
-                        <div class="form-group">
-                            <label for="lokasyon">Lokasyon</label>
-                            <input type="text" id="lokasyon" name="lokasyon">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="refakatDurumu">Refakat Durumu</label>
-                            <input type="text" id="refakatDurumu" name="refakatDurumu">
-                        </div>
-                        <div class="form-group">
-                            <label for="hagsSuresi">HAGS Süresi</label>
-                            <input type="text" id="hagsSuresi" name="hagsSuresi">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="kesintiSuresi">Kesinti Süresi</label>
-                            <input type="text" id="kesintiSuresi" name="kesintiSuresi">
-                        </div>
-                        <div class="form-group">
-                            <label for="kullanilanMalzeme">Kullanılan Malzeme</label>
+                            <label for="kullanilanMalzeme">KULLANILAN MALZEME</label>
                             <input type="text" id="kullanilanMalzeme" name="kullanilanMalzeme">
                         </div>
-                    </div>
-                    <div class="form-row">
                         <div class="form-group">
-                            <label for="aciklama">Açıklama</label>
+                            <label for="aciklama">AÇIKLAMA</label>
                             <textarea id="aciklama" name="aciklama" rows="3"></textarea>
                         </div>
                         <div class="form-group">
-                            <label for="serivsEtkisi">Servis Etkisi (Detay)</label>
-                            <input type="text" id="serivsEtkisi" name="serivsEtkisi">
+                            <label for="refakatSaglandiMi">Refakat Sağlandı mı?</label>
+                            <select id="refakatSaglandiMi" name="refakatSaglandiMi">
+                                <option value="">Seçiniz</option>
+                                <option value="Evet">Evet</option>
+                                <option value="Hayır">Hayır</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="deplaseIslahIhtiyaci">Deplase Islah İhtiyacı var mı</label>
+                            <select id="deplaseIslahIhtiyaci" name="deplaseIslahIhtiyaci">
+                                <option value="">Seçiniz</option>
+                                <option value="Evet">Evet</option>
+                                <option value="Hayır">Hayır</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="hasaeTazminSureci">Hasae Tazmin Süreci</label>
+                            <select id="hasaeTazminSureci" name="hasaeTazminSureci">
+                                <option value="">Seçiniz</option>
+                                <option value="Evet">Evet</option>
+                                <option value="Hayır">Hayır</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="otdrOlcumBilgileri">OTDR Ölçüm Bilgileri</label>
+                            <textarea id="otdrOlcumBilgileri" name="otdrOlcumBilgileri" rows="3"></textarea>
                         </div>
                     </div>
+                    
                     <div class="form-actions">
                         <button type="submit" class="btn-primary" id="saveBtn">Kaydet</button>
                         <button type="button" class="btn-secondary" id="cancelBtn">İptal</button>
@@ -957,14 +1151,13 @@
     
     <script>
         let sampleData = [];
+        let filteredData = [];
         let currentPage = 1;
         const rowsPerPage = 10;
         let map = null;
         let markers = [];
         let currentFilter = 'all';
-
-        let filterBolge = '';
-        let filterKaliciCozum = '';
+        let filterData = { bolgeler: [], iller: [] };
 
         // Update last update time
         function updateLastTime() {
@@ -987,10 +1180,8 @@
         // Load map data
         async function loadMapData() {
             if (!map) return;
-            let url = '/api/map_data?';
-            if (filterBolge) url += `bolge=${encodeURIComponent(filterBolge)}&`;
-            if (filterKaliciCozum) url += `kalici_cozum=${encodeURIComponent(filterKaliciCozum)}&`;
-            const response = await fetch(url);
+            
+            const response = await fetch('/api/map_data');
             const data = await response.json();
             
             // Mevcut markerları temizle
@@ -1057,13 +1248,32 @@
             }
         }
 
+        // Load filter data
+        async function loadFilterData() {
+            const response = await fetch('/api/filter_data');
+            filterData = await response.json();
+            
+            // Populate filter dropdowns
+            const bolgeSelect = document.getElementById('filterBolge');
+            const ilSelect = document.getElementById('filterIl');
+            
+            bolgeSelect.innerHTML = '<option value="">Tümü</option>';
+            ilSelect.innerHTML = '<option value="">Tümü</option>';
+            
+            filterData.bolgeler.forEach(bolge => {
+                bolgeSelect.innerHTML += `<option value="${bolge}">${bolge}</option>`;
+            });
+            
+            filterData.iller.forEach(il => {
+                ilSelect.innerHTML += `<option value="${il}">${il}</option>`;
+            });
+        }
+
         // Fetch and display data
         async function fetchData() {
-            let url = '/api/arizalar_filtered?';
-            if (filterBolge) url += `bolge=${encodeURIComponent(filterBolge)}&`;
-            if (filterKaliciCozum) url += `kalici_cozum=${encodeURIComponent(filterKaliciCozum)}&`;
-            const response = await fetch(url);
+            const response = await fetch('/api/arizalar');
             sampleData = await response.json();
+            filteredData = [...sampleData];
             updateDashboardStats();
             renderTable();
             updateCharts();
@@ -1072,15 +1282,16 @@
         }
 
         function updateDashboardStats() {
-            const totalCount = sampleData.length;
-            const hagsCount = sampleData.filter(item => item.hagsAsildi === 'Evet').length;
-            const solvedCount = sampleData.filter(item => item.kaliciCozum === 'Evet').length;
-            const locationCount = sampleData.filter(item => item.kordinatA && item.kordinatB).length;
+            const totalCount = filteredData.length;
+            const hagsCount = filteredData.filter(item => item.hagsAsildi === 'Evet').length;
+            const solvedCount = filteredData.filter(item => item.kaliciCozum === 'Evet').length;
+            const locationCount = filteredData.filter(item => item.kordinatA && item.kordinatB).length;
 
             document.getElementById('totalCount').innerText = totalCount;
             document.getElementById('hagsCount').innerText = hagsCount;
             document.getElementById('solvedCount').innerText = solvedCount;
             document.getElementById('locationCount').innerText = locationCount;
+            document.getElementById('totalRecords').innerText = totalCount;
         }
 
         function renderTable() {
@@ -1090,42 +1301,96 @@
             // Pagination logic
             const startIndex = (currentPage - 1) * rowsPerPage;
             const endIndex = startIndex + rowsPerPage;
-            const paginatedData = sampleData.slice(startIndex, endIndex);
+            const paginatedData = filteredData.slice(startIndex, endIndex);
 
-            paginatedData.forEach(item => {
+            paginatedData.forEach((item, index) => {
+                const actualIndex = startIndex + index;
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${item.hafta}</td>
-                    <td>${item.bolge}</td>
-                    <td>${item.bultenNo}</td>
-                    <td>${item.il}</td>
-                    <td>${item.guzergah}</td>
-                    <td>${item.kordinatA}</td>
-                    <td>${item.kordinatB}</td>
+                    <td><span class="expand-toggle" onclick="toggleRowDetails(${actualIndex})"><i class="fas fa-chevron-right" id="icon-${actualIndex}"></i></span></td>
+                    <td>${item.hafta || ''}</td>
+                    <td>${item.bolge || ''}</td>
+                    <td>${item.bultenNo || ''}</td>
+                    <td>${item.il || ''}</td>
+                    <td>${item.guzergah || ''}</td>
+                    <td>${item.lokasyon || ''}</td>
                     <td>${item.arizaBaslangic ? new Date(item.arizaBaslangic).toLocaleString('tr-TR') : ''}</td>
                     <td>${item.arizaBitis ? new Date(item.arizaBitis).toLocaleString('tr-TR') : ''}</td>
-                    <td>${item.kabloTipi}</td>
-                    <td>${item.arizaKokNeden}</td>
-                    <td>${item.hagsAsildi}</td>
-                    <td>${item.servisEtkiDurum}</td>
-                    <td>${item.arizaSuresi}</td>
-                    <td><span class="status-badge ${item.kaliciCozum === 'Evet' ? 'status-ok' : 'status-warning'}">${item.kaliciCozum || 'Hayır'}</span></td>
+                    <td>${item.arizaKokNeden || ''}</td>
+                    <td><span class="status-badge ${item.hagsAsildi === 'Evet' ? 'status-error' : 'status-ok'}">${item.hagsAsildi || 'Hayır'}</span></td>
+                    <td><span class="status-badge ${item.refakatDurumu === 'Evet' ? 'status-ok' : 'status-warning'}">${item.refakatDurumu || 'Hayır'}</span></td>
+                    <td><span class="status-badge ${item.servisEtkisi === 'Var' ? 'status-warning' : 'status-ok'}">${item.servisEtkisi || 'Yok'}</span></td>
+                    <td>${item.arizaSuresi || ''}</td>
                     <td class="action-cell">
-                        <button class="edit" onclick="openEditModal(${item.id})"><i class="fas fa-edit"></i> Düzenle</button>
-                        <button class="delete" onclick="deleteRecord(${item.id})"><i class="fas fa-trash"></i> Sil</button>
+                        <button class="edit" onclick="openEditModal(${item.id})" title="Düzenle"><i class="fas fa-edit"></i></button>
+                        <button class="delete" onclick="deleteRecord(${item.id})" title="Sil"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
                 tableBody.appendChild(row);
+                
+                // Detay satırı ekle - Bizim Eklediğimiz 14 Alan
+                const detailRow = document.createElement('tr');
+                detailRow.className = 'expandable-row';
+                detailRow.id = `detail-${actualIndex}`;
+                detailRow.innerHTML = `
+                    <td colspan="15">
+                        <div class="expandable-content">
+                            <div class="detail-grid">
+                                <div class="detail-section">
+                                    <h4>Koordinat ve Konum Bilgileri</h4>
+                                    <div class="detail-item"><span class="label">KORDİNAT A:</span><span class="value">${item.kordinatA || '-'}</span></div>
+                                    <div class="detail-item"><span class="label">KORDİNAT B:</span><span class="value">${item.kordinatB || '-'}</span></div>
+                                    <div class="detail-item"><span class="label">Etkilenen Servis Bilgileri:</span><span class="value">${item.etkilenenServisBilgileri || '-'}</span></div>
+                                    <div class="detail-item"><span class="label">KABLO TİPİ:</span><span class="value">${item.kabloTipi || '-'}</span></div>
+                                </div>
+                                <div class="detail-section">
+                                    <h4>Süre ve Timing Bilgileri</h4>
+                                    <div class="detail-item"><span class="label">HAGS SÜRESİ:</span><span class="value">${item.hagsSuresi || '-'}</span></div>
+                                    <div class="detail-item"><span class="label">KESİNTİ SÜRESİ:</span><span class="value">${item.kesintiSuresi || '-'}</span></div>
+                                    <div class="detail-item"><span class="label">KALICI ÇÖZÜM SAĞLANDI MI:</span><span class="value status-badge ${item.kaliciCozum === 'Evet' ? 'status-ok' : 'status-warning'}">${item.kaliciCozum || 'Hayır'}</span></div>
+                                    <div class="detail-item"><span class="label">KULLANILAN MALZEME:</span><span class="value">${item.kullanilanMalzeme || '-'}</span></div>
+                                </div>
+                                <div class="detail-section">
+                                    <h4>Operasyonel Durum</h4>
+                                    <div class="detail-item"><span class="label">Refakat Sağlandı mı?:</span><span class="value status-badge ${item.refakatSaglandiMi === 'Evet' ? 'status-ok' : 'status-warning'}">${item.refakatSaglandiMi || 'Hayır'}</span></div>
+                                    <div class="detail-item"><span class="label">Deplase Islah İhtiyacı var mı:</span><span class="value status-badge ${item.deplaseIslahIhtiyaci === 'Evet' ? 'status-warning' : 'status-ok'}">${item.deplaseIslahIhtiyaci || 'Hayır'}</span></div>
+                                    <div class="detail-item"><span class="label">Hasae Tazmin Süreci:</span><span class="value status-badge ${item.hasaeTazminSureci === 'Evet' ? 'status-warning' : 'status-ok'}">${item.hasaeTazminSureci || 'Hayır'}</span></div>
+                                    <div class="detail-item"><span class="label">OTDR Ölçüm Bilgileri:</span><span class="value">${item.otdrOlcumBilgileri || '-'}</span></div>
+                                </div>
+                                <div class="detail-section">
+                                    <h4>Açıklamalar ve Notlar</h4>
+                                    <div class="detail-item"><span class="label">AÇIKLAMA:</span><span class="value">${item.aciklama || '-'}</span></div>
+                                    <div class="detail-item"><span class="label">Konsolide Kök Neden:</span><span class="value">${item.arizaKonsolide || '-'}</span></div>
+                                    <div class="detail-item"><span class="label">Yıl:</span><span class="value">${item.yil || new Date().getFullYear()}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(detailRow);
             });
 
             setupPagination();
+        }
+
+        function toggleRowDetails(index) {
+            const detailRow = document.getElementById(`detail-${index}`);
+            const icon = document.getElementById(`icon-${index}`);
+            
+            if (detailRow.classList.contains('expanded')) {
+                detailRow.classList.remove('expanded');
+                icon.className = 'fas fa-chevron-right';
+            } else {
+                detailRow.classList.add('expanded');
+                icon.className = 'fas fa-chevron-down';
+            }
         }
 
         function setupPagination() {
             const paginationContainer = document.getElementById('pagination');
             paginationContainer.innerHTML = '';
 
-            const totalPages = Math.ceil(sampleData.length / rowsPerPage);
+            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
             for (let i = 1; i <= totalPages; i++) {
                 const button = document.createElement('button');
                 button.innerText = i;
@@ -1141,7 +1406,7 @@
         function updateCharts() {
             // Bölgesel dağılım
             const regionCounts = {};
-            sampleData.forEach(item => {
+            filteredData.forEach(item => {
                 regionCounts[item.bolge] = (regionCounts[item.bolge] || 0) + 1;
             });
             
@@ -1165,8 +1430,8 @@
             });
             
             // Çözüm durumu
-            const solved = sampleData.filter(item => item.kaliciCozum === 'Evet').length;
-            const unsolved = sampleData.length - solved;
+            const solved = filteredData.filter(item => item.kaliciCozum === 'Evet').length;
+            const unsolved = filteredData.length - solved;
             
             const solutionChart = document.getElementById('solutionChart').getContext('2d');
             new Chart(solutionChart, {
@@ -1193,19 +1458,64 @@
             });
         }
 
+        // Filter functions
+        document.getElementById('toggleFilterBtn').onclick = () => {
+            const filterSection = document.getElementById('filterSection');
+            filterSection.classList.toggle('active');
+        }
+
+        function applyFilters() {
+            const bolge = document.getElementById('filterBolge').value;
+            const il = document.getElementById('filterIl').value;
+            const kaliciCozum = document.getElementById('filterKaliciCozum').value;
+            const hags = document.getElementById('filterHags').value;
+            const servisEtkisi = document.getElementById('filterServisEtkisi').value;
+            const bultenNo = document.getElementById('filterBultenNo').value;
+
+            filteredData = sampleData.filter(item => {
+                return (!bolge || item.bolge.includes(bolge)) &&
+                       (!il || item.il.includes(il)) &&
+                       (!kaliciCozum || item.kaliciCozum === kaliciCozum) &&
+                       (!hags || item.hagsAsildi === hags) &&
+                       (!servisEtkisi || item.servisEtkisi === servisEtkisi) &&
+                       (!bultenNo || item.bultenNo.includes(bultenNo));
+            });
+
+            currentPage = 1;
+            updateDashboardStats();
+            renderTable();
+            updateCharts();
+        }
+
+        function clearFilters() {
+            document.getElementById('filterBolge').value = '';
+            document.getElementById('filterIl').value = '';
+            document.getElementById('filterKaliciCozum').value = '';
+            document.getElementById('filterHags').value = '';
+            document.getElementById('filterServisEtkisi').value = '';
+            document.getElementById('filterBultenNo').value = '';
+            
+            filteredData = [...sampleData];
+            currentPage = 1;
+            updateDashboardStats();
+            renderTable();
+            updateCharts();
+        }
+
         function openEditModal(id) {
             const item = sampleData.find(item => item.id === id);
             if (item) {
                 document.getElementById('modalTitle').innerText = 'Fiber Arıza Düzenle';
                 document.getElementById('rowId').value = item.id;
+                
+                // İlk 14 sütun - Input verileri
                 document.getElementById('hafta').value = item.hafta || '';
                 document.getElementById('bolge').value = item.bolge || '';
                 document.getElementById('bultenNo').value = item.bultenNo || '';
-                document.getElementById('bultenNo').readOnly = true; // Düzenleme modunda readonly
+                document.getElementById('bultenNo').readOnly = true;
                 document.getElementById('il').value = item.il || '';
                 document.getElementById('guzergah').value = item.guzergah || '';
-                document.getElementById('kordinatA').value = item.kordinatA || '';
-                document.getElementById('kordinatB').value = item.kordinatB || '';
+                document.getElementById('lokasyon').value = item.lokasyon || '';
                 
                 // Tarih formatını düzelt
                 if (item.arizaBaslangic) {
@@ -1222,20 +1532,27 @@
                     document.getElementById('bitisTarihi').value = '';
                 }
                 
-                document.getElementById('kabloTipi').value = item.kabloTipi || '';
+                document.getElementById('arizaKonsolide').value = item.arizaKonsolide || '';
                 document.getElementById('kokNeden').value = item.arizaKokNeden || '';
                 document.getElementById('hags').value = item.hagsAsildi || '';
-                document.getElementById('servisEtkisi').value = item.servisEtkiDurum || '';
-                document.getElementById('arizaSuresi').value = item.arizaSuresi || '';
-                document.getElementById('kaliciCozum').value = item.kaliciCozum || '';
-                document.getElementById('arizaKonsolide').value = item.arizaKonsolide || '';
-                document.getElementById('lokasyon').value = item.lokasyon || '';
                 document.getElementById('refakatDurumu').value = item.refakatDurumu || '';
+                document.getElementById('servisEtkisi').value = item.servisEtkisi || '';
+                document.getElementById('arizaSuresi').value = item.arizaSuresi || '';
+                
+                // Son 14 sütun - Düzenlenebilir alanlar
+                document.getElementById('kordinatA').value = item.kordinatA || '';
+                document.getElementById('kordinatB').value = item.kordinatB || '';
+                document.getElementById('etkilenenServisBilgileri').value = item.etkilenenServisBilgileri || '';
+                document.getElementById('kabloTipi').value = item.kabloTipi || '';
                 document.getElementById('hagsSuresi').value = item.hagsSuresi || '';
                 document.getElementById('kesintiSuresi').value = item.kesintiSuresi || '';
+                document.getElementById('kaliciCozum').value = item.kaliciCozum || '';
                 document.getElementById('kullanilanMalzeme').value = item.kullanilanMalzeme || '';
                 document.getElementById('aciklama').value = item.aciklama || '';
-                document.getElementById('serivsEtkisi').value = item.servisEtkisi || '';
+                document.getElementById('refakatSaglandiMi').value = item.refakatSaglandiMi || '';
+                document.getElementById('deplaseIslahIhtiyaci').value = item.deplaseIslahIhtiyaci || '';
+                document.getElementById('hasaeTazminSureci').value = item.hasaeTazminSureci || '';
+                document.getElementById('otdrOlcumBilgileri').value = item.otdrOlcumBilgileri || '';
                 
                 const modal = document.getElementById('detail-modal');
                 modal.style.display = 'block';
@@ -1247,7 +1564,7 @@
             document.getElementById('modalTitle').innerText = 'Yeni Fiber Arıza Ekle';
             document.getElementById('detailForm').reset();
             document.getElementById('rowId').value = '';
-            document.getElementById('bultenNo').readOnly = false; // Yeni kayıtta düzenlenebilir
+            document.getElementById('bultenNo').readOnly = false;
             document.getElementById('detail-modal').style.display = 'block';
         }
 
@@ -1256,10 +1573,7 @@
             const formData = new FormData(document.getElementById('detailForm'));
             const data = Object.fromEntries(formData);
             
-            // ID'yi al
             data.rowId = document.getElementById('rowId').value;
-
-            // Tarihleri ISO formatına çevir
             data.baslangicTarihi = data.baslangicTarihi ? new Date(data.baslangicTarihi).toISOString() : '';
             data.bitisTarihi = data.bitisTarihi ? new Date(data.bitisTarihi).toISOString() : '';
 
@@ -1346,7 +1660,7 @@
                 body: formData
             }).then(resp => {
                 if (resp.redirected) {
-                    window.location.href = resp.url; // Yükleme sonrası explorer'a yönlendir
+                    window.location.href = resp.url;
                 } else {
                     document.getElementById('statusMessage').innerText = 'Yükleme başarısız!';
                     document.getElementById('statusMessage').className = 'status-message error';
@@ -1369,47 +1683,11 @@
         };
 
         // Initial data load
+        loadFilterData();
         fetchData();
         
         // Auto refresh every 5 minutes
         setInterval(fetchData, 300000);
-
-        // Filter uygulama fonksiyonu
-        function applyFilters() {
-            filterBolge = document.getElementById('filterBolge').value;
-            filterKaliciCozum = document.getElementById('filterKaliciCozum').value;
-            fetchData();
-        }
-
-        // Filtreleri sıfırlama fonksiyonu
-        function resetFilters() {
-            document.getElementById('filterBolge').value = '';
-            document.getElementById('filterKaliciCozum').value = '';
-            filterBolge = '';
-            filterKaliciCozum = '';
-            fetchData();
-        }
-
-        // Bölge seçeneklerini dinamik olarak yükle
-        async function loadBolgeOptions() {
-            const response = await fetch('/api/bolge_options');
-            const data = await response.json();
-
-            const bolgeSelect = document.getElementById('filterBolge');
-            bolgeSelect.innerHTML = '<option value="">Tüm Bölgeler</option>'; // İlk seçenek "Tüm Bölgeler"
-
-            data.forEach(item => {
-                const option = document.createElement('option');
-                option.value = item.bolge;
-                option.innerText = item.bolge;
-                bolgeSelect.appendChild(option);
-            });
-        }
-
-        // Sayfa yüklendiğinde bölge seçeneklerini yükle
-        document.addEventListener('DOMContentLoaded', function() {
-            loadBolgeOptions();
-        });
     </script>
 </body>
 </html>
