@@ -525,12 +525,18 @@ def export_kmz(export_type='all'):
 # Harita API endpoint'i
 @app.route('/api/map_data')
 def api_map_data():
-    """Harita için arıza verilerini döndür"""
-    arizalar = FiberAriza.query.filter(
+    """Harita için arıza verilerini döndür (filtreli)"""
+    bolge = request.args.get('bolge')
+    kalici_cozum = request.args.get('kalici_cozum')
+    query = FiberAriza.query.filter(
         FiberAriza.kordinat_a != '',
         FiberAriza.kordinat_b != ''
-    ).all()
-    
+    )
+    if bolge:
+        query = query.filter_by(bolge=bolge)
+    if kalici_cozum:
+        query = query.filter_by(kalici_cozum=kalici_cozum)
+    arizalar = query.all()
     markers = []
     for ariza in arizalar:
         try:
@@ -555,7 +561,6 @@ def api_map_data():
             })
         except ValueError:
             continue
-    
     return jsonify(markers)
 
 # Excel Export fonksiyonu (tüm data)
@@ -612,6 +617,67 @@ def export_excel_all():
         as_attachment=True,
         download_name=f'fiber_arizalar_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
     )
+
+@app.route('/export_excel_custom', methods=['POST'])
+def export_excel_custom():
+    # Kullanıcıdan seçili başlıkları al
+    selected_fields = request.json.get('fields', [])
+    arizalar = FiberAriza.query.all()
+    data = []
+    for ariza in arizalar:
+        row = {}
+        for field in selected_fields:
+            row[field] = getattr(ariza, field, '')
+        data.append(row)
+    df = pd.DataFrame(data)
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Fiber Arızalar', index=False)
+    output.seek(0)
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'fiber_arizalar_custom_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+    )
+
+@app.route('/api/arizalar_filtered')
+def api_arizalar_filtered():
+    # Örnek: ?bolge=Bursa&kalici_cozum=Evet
+    query = FiberAriza.query
+    bolge = request.args.get('bolge')
+    kalici_cozum = request.args.get('kalici_cozum')
+    if bolge:
+        query = query.filter_by(bolge=bolge)
+    if kalici_cozum:
+        query = query.filter_by(kalici_cozum=kalici_cozum)
+    arizalar = query.all()
+    return jsonify([{
+        'id': a.id,
+        'hafta': a.hafta,
+        'bolge': a.bolge,
+        'bultenNo': a.bulten_no,
+        'il': a.il,
+        'guzergah': a.guzergah,
+        'kordinatA': a.kordinat_a,
+        'kordinatB': a.kordinat_b,
+        'servisEtkisi': a.serivs_etkisi,
+        'lokasyon': a.lokasyon,
+        'arizaBaslangic': a.ariza_baslangic.isoformat() if a.ariza_baslangic else '',
+        'arizaBitis': a.ariza_bitis.isoformat() if a.ariza_bitis else '',
+        'kabloTipi': a.kablo_tipi,
+        'hagsSuresi': a.hags_suresi,
+        'kesintiSuresi': a.kesinti_suresi,
+        'arizaKonsolide': a.ariza_konsolide,
+        'arizaKokNeden': a.ariza_kok_neden,
+        'hagsAsildi': a.hags_asildi_mi,
+        'refakatDurumu': a.refakat_durumu,
+        'servisEtkiDurum': a.servis_etkisi,
+        'arizaSuresi': a.ariza_suresi,
+        'kaliciCozum': a.kalici_cozum,
+        'kullanilanMalzeme': a.kullanilan_malzeme,
+        'aciklama': a.aciklama
+    } for a in arizalar])
 
 if __name__ == '__main__':
     app.run(debug=True)

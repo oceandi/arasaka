@@ -764,6 +764,19 @@
                         </div>
                     </div>
                 </h3>
+                <!-- FİLTRE ALANLARI EKLE -->
+                <div style="margin-bottom:10px;display:flex;gap:10px;">
+                    <select id="filterBolge">
+                        <option value="">Tüm Bölgeler</option>
+                    </select>
+                    <select id="filterKaliciCozum">
+                        <option value="">Tümü</option>
+                        <option value="Evet">Çözülen</option>
+                        <option value="Hayır">Çözülmeyen</option>
+                    </select>
+                    <button onclick="applyFilters()" style="padding:5px 15px;">Filtrele</button>
+                    <button onclick="resetFilters()" style="padding:5px 15px;">Temizle</button>
+                </div>
                 <div class="table-wrapper">
                     <table id="dataTable">
                         <thead>
@@ -950,6 +963,9 @@
         let markers = [];
         let currentFilter = 'all';
 
+        let filterBolge = '';
+        let filterKaliciCozum = '';
+
         // Update last update time
         function updateLastTime() {
             const now = new Date();
@@ -971,8 +987,10 @@
         // Load map data
         async function loadMapData() {
             if (!map) return;
-            
-            const response = await fetch('/api/map_data');
+            let url = '/api/map_data?';
+            if (filterBolge) url += `bolge=${encodeURIComponent(filterBolge)}&`;
+            if (filterKaliciCozum) url += `kalici_cozum=${encodeURIComponent(filterKaliciCozum)}&`;
+            const response = await fetch(url);
             const data = await response.json();
             
             // Mevcut markerları temizle
@@ -1041,7 +1059,10 @@
 
         // Fetch and display data
         async function fetchData() {
-            const response = await fetch('/api/arizalar');
+            let url = '/api/arizalar_filtered?';
+            if (filterBolge) url += `bolge=${encodeURIComponent(filterBolge)}&`;
+            if (filterKaliciCozum) url += `kalici_cozum=${encodeURIComponent(filterKaliciCozum)}&`;
+            const response = await fetch(url);
             sampleData = await response.json();
             updateDashboardStats();
             renderTable();
@@ -1352,6 +1373,43 @@
         
         // Auto refresh every 5 minutes
         setInterval(fetchData, 300000);
+
+        // Filter uygulama fonksiyonu
+        function applyFilters() {
+            filterBolge = document.getElementById('filterBolge').value;
+            filterKaliciCozum = document.getElementById('filterKaliciCozum').value;
+            fetchData();
+        }
+
+        // Filtreleri sıfırlama fonksiyonu
+        function resetFilters() {
+            document.getElementById('filterBolge').value = '';
+            document.getElementById('filterKaliciCozum').value = '';
+            filterBolge = '';
+            filterKaliciCozum = '';
+            fetchData();
+        }
+
+        // Bölge seçeneklerini dinamik olarak yükle
+        async function loadBolgeOptions() {
+            const response = await fetch('/api/bolge_options');
+            const data = await response.json();
+
+            const bolgeSelect = document.getElementById('filterBolge');
+            bolgeSelect.innerHTML = '<option value="">Tüm Bölgeler</option>'; // İlk seçenek "Tüm Bölgeler"
+
+            data.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.bolge;
+                option.innerText = item.bolge;
+                bolgeSelect.appendChild(option);
+            });
+        }
+
+        // Sayfa yüklendiğinde bölge seçeneklerini yükle
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBolgeOptions();
+        });
     </script>
 </body>
 </html>
