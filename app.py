@@ -59,6 +59,20 @@ class FiberAriza(db.Model):
     aciklama = db.Column(db.Text)
     serivs_etkisi = db.Column(db.String(50))  # H sütunu için yeni alan
 
+class DeplaseIslah(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    yil = db.Column(db.String(10))
+    hafta = db.Column(db.String(10))
+    ddo = db.Column(db.String(100))
+    guzergah = db.Column(db.String(200))
+    is_tipi = db.Column(db.String(50))
+    kordinat_a = db.Column(db.String(50))
+    kordinat_b = db.Column(db.String(50))
+    aciklama = db.Column(db.Text)
+    durum = db.Column(db.String(20))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 @app.route('/')
 def home():
     return redirect(url_for('browse'))
@@ -678,6 +692,156 @@ def api_arizalar_filtered():
         'kullanilanMalzeme': a.kullanilan_malzeme,
         'aciklama': a.aciklama
     } for a in arizalar])
+
+@app.route('/deplase_islah')
+def deplase_islah():
+    total = DeplaseIslah.query.count()
+    return render_template('deplase_islah.html', total=total)
+
+@app.route('/api/deplase_islah')
+def api_deplase_islah():
+    deplaseler = DeplaseIslah.query.all()
+    return jsonify([{
+        'id': d.id,
+        'yil': d.yil,
+        'hafta': d.hafta,
+        'ddo': d.ddo,
+        'guzergah': d.guzergah,
+        'isTipi': d.is_tipi,
+        'kordinatA': d.kordinat_a,
+        'kordinatB': d.kordinat_b,
+        'aciklama': d.aciklama,
+        'durum': d.durum
+    } for d in deplaseler])
+
+@app.route('/api/deplase_islah', methods=['POST'])
+def api_add_deplase_islah():
+    data = request.get_json()
+    
+    deplase = DeplaseIslah(
+        yil=data.get('yil'),
+        hafta=data.get('hafta'),
+        ddo=data.get('ddo'),
+        guzergah=data.get('guzergah'),
+        is_tipi=data.get('isTipi'),
+        kordinat_a=data.get('kordinatA'),
+        kordinat_b=data.get('kordinatB'),
+        aciklama=data.get('aciklama'),
+        durum=data.get('durum')
+    )
+    db.session.add(deplase)
+    db.session.commit()
+    return jsonify({'status': 'ok'}), 201
+
+@app.route('/api/deplase_islah/<int:id>', methods=['PUT'])
+def api_update_deplase_islah(id):
+    data = request.get_json()
+    deplase = DeplaseIslah.query.get_or_404(id)
+    
+    deplase.yil = data.get('yil')
+    deplase.hafta = data.get('hafta')
+    deplase.ddo = data.get('ddo')
+    deplase.guzergah = data.get('guzergah')
+    deplase.is_tipi = data.get('isTipi')
+    deplase.kordinat_a = data.get('kordinatA')
+    deplase.kordinat_b = data.get('kordinatB')
+    deplase.aciklama = data.get('aciklama')
+    deplase.durum = data.get('durum')
+    deplase.updated_at = datetime.utcnow()
+    
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+@app.route('/api/deplase_islah/<int:id>', methods=['DELETE'])
+def api_delete_deplase_islah(id):
+    deplase = DeplaseIslah.query.get_or_404(id)
+    db.session.delete(deplase)
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+@app.route('/upload_deplase_islah_excel', methods=['POST'])
+def upload_deplase_islah_excel():
+    if 'excel_file' not in request.files:
+        flash('Dosya seçilmedi', 'danger')
+        return redirect(url_for('deplase_islah'))
+    
+    file = request.files['excel_file']
+    if file.filename == '':
+        flash('Geçersiz dosya', 'danger')
+        return redirect(url_for('deplase_islah'))
+
+    try:
+        df = pd.read_excel(file)
+        df.columns = [str(col).strip() for col in df.columns]
+        
+        required_columns = ['YIL', 'HAFTA', 'DDO', 'Güzergah', 'İş Tipi', 
+                          'KOORDİNAT A', 'KOORDİNAT B', 'AÇIKLAMA', 'DURUM']
+        
+        for col in required_columns:
+            if col not in df.columns:
+                flash(f"Excel'de '{col}' sütunu eksik!", 'danger')
+                return redirect(url_for('deplase_islah'))
+        
+        new_count = 0
+        for _, row in df.iterrows():
+            new_deplase = DeplaseIslah(
+                yil=str(row.get('YIL', '')),
+                hafta=str(row.get('HAFTA', '')),
+                ddo=str(row.get('DDO', '')),
+                guzergah=str(row.get('Güzergah', '')),
+                is_tipi=str(row.get('İş Tipi', '')),
+                kordinat_a=str(row.get('KOORDİNAT A', '')),
+                kordinat_b=str(row.get('KOORDİNAT B', '')),
+                aciklama=str(row.get('AÇIKLAMA', '')),
+                durum=str(row.get('DURUM', ''))
+            )
+            db.session.add(new_deplase)
+            new_count += 1
+        
+        db.session.commit()
+        flash(f'{new_count} yeni kayıt başarıyla eklendi', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Hata: {str(e)}', 'danger')
+    
+    return redirect(url_for('deplase_islah'))
+
+@app.route('/export_deplase_islah_excel')
+def export_deplase_islah_excel():
+    deplaseler = DeplaseIslah.query.all()
+    
+    data = []
+    for deplase in deplaseler:
+        data.append({
+            'YIL': deplase.yil,
+            'HAFTA': deplase.hafta,
+            'DDO': deplase.ddo,
+            'Güzergah': deplase.guzergah,
+            'İş Tipi': deplase.is_tipi,
+            'KOORDİNAT A': deplase.kordinat_a,
+            'KOORDİNAT B': deplase.kordinat_b,
+            'AÇIKLAMA': deplase.aciklama,
+            'DURUM': deplase.durum
+        })
+    
+    df = pd.DataFrame(data)
+    output = BytesIO()
+    
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Deplase Islah', index=False)
+        worksheet = writer.sheets['Deplase Islah']
+        for i, col in enumerate(df.columns):
+            column_width = max(df[col].astype(str).map(len).max(), len(col)) + 2
+            worksheet.set_column(i, i, column_width)
+    
+    output.seek(0)
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'deplase_islah_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)
