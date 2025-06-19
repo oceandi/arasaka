@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deplase Islah Kablo Upgrade - KAREL Network Dashboard</title>
+    <title>Hasar Tazmin - KAREL Network Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -252,6 +252,15 @@
             background-color: var(--content-bg);
         }
         
+        .date-input {
+            background-color: var(--content-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 5px;
+            border-radius: 4px;
+            width: 100%;
+        }
+        
         select {
             background-color: var(--content-bg);
             color: var(--text-color);
@@ -269,14 +278,14 @@
             display: inline-block;
         }
         
-        .status-tamamlandi {
-            background-color: rgba(34, 197, 94, 0.2);
-            color: var(--success-color);
-        }
-        
-        .status-devam {
+        .status-iletildi {
             background-color: rgba(245, 158, 11, 0.2);
             color: var(--warning-color);
+        }
+        
+        .status-hazirlaniyor {
+            background-color: rgba(34, 197, 94, 0.2);
+            color: var(--success-color);
         }
         
         .action-cell {
@@ -446,17 +455,16 @@
             <div class="menu">
                 <ul>
                     <li><a href="/browse"><i class="fas fa-chart-line"></i> Dashboard</a></li>
-                    <li><a href="#" class="active"><i class="fas fa-tools"></i> Deplase Islah Kablo Upgrade</a></li>
-                    <li><a href="/hasar_tazmin"><i class="fas fa-money-check-alt"></i> Hasar Tazmin</a></li>
+                    <li><a href="/deplase_islah"><i class="fas fa-tools"></i> Deplase Islah Kablo Upgrade</a></li>
+                    <li><a href="#" class="active"><i class="fas fa-money-check-alt"></i> Hasar Tazmin</a></li>
                     <li><a href="#"><i class="fas fa-building"></i> FTTB Optimizasyon</a></li>
                     <li><a href="#"><i class="fas fa-sync-alt"></i> Kritik Modernizasyon</a></li>
-                    <li><a href="#"><i class="fas fa-download"></i> Raporlar</a></li>
                 </ul>
             </div>
         </div>
         <div class="content">
             <div class="header">
-                <h2>Deplase Islah Kablo Upgrade</h2>
+                <h2>Hasar Tazmin</h2>
                 <div class="excel-info">
                     <span>Toplam Kayıt: <strong id="totalCount">0</strong></span>
                     <span>Son Güncelleme: <strong id="lastUpdate">-</strong></span>
@@ -489,15 +497,14 @@
                         <thead>
                             <tr>
                                 <th style="width: 50px;">ID</th>
-                                <th>YIL</th>
-                                <th>HAFTA</th>
-                                <th>DDO</th>
-                                <th>Güzergah</th>
-                                <th>İş Tipi</th>
-                                <th>KOORDİNAT A</th>
-                                <th>KOORDİNAT B</th>
-                                <th>AÇIKLAMA</th>
-                                <th>DURUM</th>
+                                <th>BÖLGE</th>
+                                <th>YAZI NO</th>
+                                <th>TARİH</th>
+                                <th>ASIL FİRMA</th>
+                                <th>MUHABERAT VERİLİŞ TARİHİ</th>
+                                <th>TAŞERON</th>
+                                <th>DURUMU</th>
+                                <th>MUHABERAT TESLİM EDEN</th>
                                 <th style="width: 100px;">İşlemler</th>
                             </tr>
                         </thead>
@@ -523,49 +530,40 @@
             <form id="detailForm">
                 <input type="hidden" id="rowId">
                 <div class="form-group">
-                    <label for="yil">YIL</label>
-                    <input type="text" id="yil" required>
+                    <label for="bolge">BÖLGE</label>
+                    <input type="text" id="bolge" required>
                 </div>
                 <div class="form-group">
-                    <label for="hafta">HAFTA</label>
-                    <input type="text" id="hafta" required>
+                    <label for="yaziNo">YAZI NO</label>
+                    <input type="text" id="yaziNo" required>
                 </div>
                 <div class="form-group">
-                    <label for="ddo">DDO</label>
-                    <input type="text" id="ddo" required>
+                    <label for="tarih">TARİH</label>
+                    <input type="date" id="tarih" required>
                 </div>
                 <div class="form-group">
-                    <label for="guzergah">Güzergah</label>
-                    <input type="text" id="guzergah" required>
+                    <label for="asilFirma">ASIL FİRMA</label>
+                    <input type="text" id="asilFirma" required>
                 </div>
                 <div class="form-group">
-                    <label for="isTipi">İş Tipi</label>
-                    <select id="isTipi" required>
+                    <label for="muhaberatVerilisTarihi">MUHABERAT VERİLİŞ TARİHİ</label>
+                    <input type="date" id="muhaberatVerilisTarihi">
+                </div>
+                <div class="form-group">
+                    <label for="taseron">TAŞERON</label>
+                    <input type="text" id="taseron">
+                </div>
+                <div class="form-group">
+                    <label for="durumu">DURUMU</label>
+                    <select id="durumu" required>
                         <option value="">Seçiniz</option>
-                        <option value="DEPLASE">DEPLASE</option>
-                        <option value="GÖMÜLÜ EK KUTUSU ISLAH">GÖMÜLÜ EK KUTUSU ISLAH</option>
-                        <option value="KABLO UPGRADE">KABLO UPGRADE</option>
+                        <option value="FİRMAYA İLETİLDİ">FİRMAYA İLETİLDİ</option>
+                        <option value="HASAR TAZMİN HAZIRLANIYOR">HASAR TAZMİN HAZIRLANIYOR</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="kordinatA">KOORDİNAT A</label>
-                    <input type="text" id="kordinatA" placeholder="Örnek: 40.123456">
-                </div>
-                <div class="form-group">
-                    <label for="kordinatB">KOORDİNAT B</label>
-                    <input type="text" id="kordinatB" placeholder="Örnek: 29.123456">
-                </div>
-                <div class="form-group">
-                    <label for="aciklama">AÇIKLAMA</label>
-                    <textarea id="aciklama" rows="3"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="durum">DURUM</label>
-                    <select id="durum" required>
-                        <option value="">Seçiniz</option>
-                        <option value="TAMAMLANDI">TAMAMLANDI</option>
-                        <option value="DEVAM EDİYOR">DEVAM EDİYOR</option>
-                    </select>
+                    <label for="muhaberatTeslimEden">MUHABERAT TESLİM EDEN</label>
+                    <input type="text" id="muhaberatTeslimEden">
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Kaydet</button>
@@ -583,7 +581,7 @@
         // Load data on page load
         async function loadData() {
             try {
-                const response = await fetch('/api/deplase_islah');
+                const response = await fetch('/api/hasar_tazmin');
                 data = await response.json();
                 renderTable();
                 updateStats();
@@ -591,6 +589,18 @@
                 console.error('Veri yükleme hatası:', error);
                 showMessage('Veri yüklenirken hata oluştu!', 'error');
             }
+        }
+        
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('tr-TR');
+        }
+        
+        function formatDateForInput(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            return date.toISOString().split('T')[0];
         }
         
         function renderTable() {
@@ -611,20 +621,25 @@
             
             row.innerHTML = `
                 <td>${item.id || 'Yeni'}</td>
-                <td class="editable" contenteditable="${isEditing}" data-field="yil">${item.yil || ''}</td>
-                <td class="editable" contenteditable="${isEditing}" data-field="hafta">${item.hafta || ''}</td>
-                <td class="editable" contenteditable="${isEditing}" data-field="ddo">${item.ddo || ''}</td>
-                <td class="editable" contenteditable="${isEditing}" data-field="guzergah">${item.guzergah || ''}</td>
+                <td class="editable" contenteditable="${isEditing}" data-field="bolge">${item.bolge || ''}</td>
+                <td class="editable" contenteditable="${isEditing}" data-field="yaziNo">${item.yaziNo || ''}</td>
                 <td>
-                    ${isEditing ? createSelectHTML('isTipi', item.isTipi) : item.isTipi || ''}
+                    ${isEditing ? 
+                    `<input type="date" class="date-input" data-field="tarih" value="${formatDateForInput(item.tarih)}">` : 
+                    formatDate(item.tarih)}
                 </td>
-                <td class="editable" contenteditable="${isEditing}" data-field="kordinatA">${item.kordinatA || ''}</td>
-                <td class="editable" contenteditable="${isEditing}" data-field="kordinatB">${item.kordinatB || ''}</td>
-                <td class="editable" contenteditable="${isEditing}" data-field="aciklama">${item.aciklama || ''}</td>
+                <td class="editable" contenteditable="${isEditing}" data-field="asilFirma">${item.asilFirma || ''}</td>
                 <td>
-                    ${isEditing ? createSelectHTML('durum', item.durum) : 
-                    `<span class="status-badge ${item.durum === 'TAMAMLANDI' ? 'status-tamamlandi' : 'status-devam'}">${item.durum || ''}</span>`}
+                    ${isEditing ? 
+                    `<input type="date" class="date-input" data-field="muhaberatVerilisTarihi" value="${formatDateForInput(item.muhaberatVerilisTarihi)}">` : 
+                    formatDate(item.muhaberatVerilisTarihi)}
                 </td>
+                <td class="editable" contenteditable="${isEditing}" data-field="taseron">${item.taseron || ''}</td>
+                <td>
+                    ${isEditing ? createSelectHTML('durumu', item.durumu) : 
+                    `<span class="status-badge ${item.durumu === 'FİRMAYA İLETİLDİ' ? 'status-iletildi' : 'status-hazirlaniyor'}">${item.durumu || ''}</span>`}
+                </td>
+                <td class="editable" contenteditable="${isEditing}" data-field="muhaberatTeslimEden">${item.muhaberatTeslimEden || ''}</td>
                 <td class="action-cell">
                     ${isEditing ? 
                     `<button class="save" onclick="saveRow(${item.id})" title="Kaydet"><i class="fas fa-check"></i></button>
@@ -644,6 +659,14 @@
                     });
                 });
                 
+                row.querySelectorAll('.date-input').forEach(input => {
+                    input.addEventListener('change', function() {
+                        const field = this.dataset.field;
+                        const value = this.value;
+                        updatePendingChange(item.id, field, value);
+                    });
+                });
+                
                 row.querySelectorAll('select').forEach(select => {
                     select.addEventListener('change', function() {
                         const field = this.dataset.field;
@@ -657,21 +680,12 @@
         }
         
         function createSelectHTML(field, value) {
-            if (field === 'isTipi') {
+            if (field === 'durumu') {
                 return `
                     <select data-field="${field}">
                         <option value="">Seçiniz</option>
-                        <option value="DEPLASE" ${value === 'DEPLASE' ? 'selected' : ''}>DEPLASE</option>
-                        <option value="GÖMÜLÜ EK KUTUSU ISLAH" ${value === 'GÖMÜLÜ EK KUTUSU ISLAH' ? 'selected' : ''}>GÖMÜLÜ EK KUTUSU ISLAH</option>
-                        <option value="KABLO UPGRADE" ${value === 'KABLO UPGRADE' ? 'selected' : ''}>KABLO UPGRADE</option>
-                    </select>
-                `;
-            } else if (field === 'durum') {
-                return `
-                    <select data-field="${field}">
-                        <option value="">Seçiniz</option>
-                        <option value="TAMAMLANDI" ${value === 'TAMAMLANDI' ? 'selected' : ''}>TAMAMLANDI</option>
-                        <option value="DEVAM EDİYOR" ${value === 'DEVAM EDİYOR' ? 'selected' : ''}>DEVAM EDİYOR</option>
+                        <option value="FİRMAYA İLETİLDİ" ${value === 'FİRMAYA İLETİLDİ' ? 'selected' : ''}>FİRMAYA İLETİLDİ</option>
+                        <option value="HASAR TAZMİN HAZIRLANIYOR" ${value === 'HASAR TAZMİN HAZIRLANIYOR' ? 'selected' : ''}>HASAR TAZMİN HAZIRLANIYOR</option>
                     </select>
                 `;
             }
@@ -712,7 +726,7 @@
             const updatedItem = { ...item, ...changes };
             
             try {
-                const response = await fetch(`/api/deplase_islah/${id}`, {
+                const response = await fetch(`/api/hasar_tazmin/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(updatedItem)
@@ -739,7 +753,7 @@
             if (!confirm('Bu kaydı silmek istediğinize emin misiniz?')) return;
             
             try {
-                const response = await fetch(`/api/deplase_islah/${id}`, {
+                const response = await fetch(`/api/hasar_tazmin/${id}`, {
                     method: 'DELETE'
                 });
                 
@@ -771,7 +785,7 @@
                 const updatedItem = { ...item, ...changes };
                 
                 try {
-                    const response = await fetch(`/api/deplase_islah/${id}`, {
+                    const response = await fetch(`/api/hasar_tazmin/${id}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(updatedItem)
@@ -817,19 +831,18 @@
             e.preventDefault();
             
             const formData = {
-                yil: document.getElementById('yil').value,
-                hafta: document.getElementById('hafta').value,
-                ddo: document.getElementById('ddo').value,
-                guzergah: document.getElementById('guzergah').value,
-                isTipi: document.getElementById('isTipi').value,
-                kordinatA: document.getElementById('kordinatA').value,
-                kordinatB: document.getElementById('kordinatB').value,
-                aciklama: document.getElementById('aciklama').value,
-                durum: document.getElementById('durum').value
+                bolge: document.getElementById('bolge').value,
+                yaziNo: document.getElementById('yaziNo').value,
+                tarih: document.getElementById('tarih').value,
+                asilFirma: document.getElementById('asilFirma').value,
+                muhaberatVerilisTarihi: document.getElementById('muhaberatVerilisTarihi').value,
+                taseron: document.getElementById('taseron').value,
+                durumu: document.getElementById('durumu').value,
+                muhaberatTeslimEden: document.getElementById('muhaberatTeslimEden').value
             };
             
             try {
-                const response = await fetch('/api/deplase_islah', {
+                const response = await fetch('/api/hasar_tazmin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
@@ -854,7 +867,7 @@
         }
         
         function exportToExcel() {
-            window.location.href = '/export_deplase_islah_excel';
+            window.location.href = '/export_hasar_tazmin_excel';
         }
         
         function updateStats() {
@@ -903,7 +916,7 @@
             const formData = new FormData();
             formData.append('excel_file', file);
             
-            fetch('/upload_deplase_islah_excel', {
+            fetch('/upload_hasar_tazmin_excel', {
                 method: 'POST',
                 body: formData
             }).then(response => {

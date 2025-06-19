@@ -73,6 +73,19 @@ class DeplaseIslah(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+class HasarTazmin(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    bolge = db.Column(db.String(100))
+    yazi_no = db.Column(db.String(100))
+    tarih = db.Column(db.DateTime)
+    asil_firma = db.Column(db.String(200))
+    muhaberat_verilis_tarihi = db.Column(db.DateTime)
+    taseron = db.Column(db.String(200))
+    durumu = db.Column(db.String(50))
+    muhaberat_teslim_eden = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 @app.route('/')
 def home():
     return redirect(url_for('browse'))
@@ -841,6 +854,176 @@ def export_deplase_islah_excel():
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
         download_name=f'deplase_islah_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+    )
+
+
+@app.route('/hasar_tazmin')
+def hasar_tazmin():
+    total = HasarTazmin.query.count()
+    return render_template('hasar_tazmin.html', total=total)
+
+@app.route('/api/hasar_tazmin')
+def api_hasar_tazmin():
+    hasarlar = HasarTazmin.query.all()
+    return jsonify([{
+        'id': h.id,
+        'bolge': h.bolge,
+        'yaziNo': h.yazi_no,
+        'tarih': h.tarih.isoformat() if h.tarih else '',
+        'asilFirma': h.asil_firma,
+        'muhaberatVerilisTarihi': h.muhaberat_verilis_tarihi.isoformat() if h.muhaberat_verilis_tarihi else '',
+        'taseron': h.taseron,
+        'durumu': h.durumu,
+        'muhaberatTeslimEden': h.muhaberat_teslim_eden
+    } for h in hasarlar])
+
+@app.route('/api/hasar_tazmin', methods=['POST'])
+def api_add_hasar_tazmin():
+    data = request.get_json()
+    
+    def parse_date(date_str):
+        if not date_str:
+            return None
+        try:
+            return datetime.fromisoformat(date_str)
+        except:
+            return None
+    
+    hasar = HasarTazmin(
+        bolge=data.get('bolge'),
+        yazi_no=data.get('yaziNo'),
+        tarih=parse_date(data.get('tarih')),
+        asil_firma=data.get('asilFirma'),
+        muhaberat_verilis_tarihi=parse_date(data.get('muhaberatVerilisTarihi')),
+        taseron=data.get('taseron'),
+        durumu=data.get('durumu'),
+        muhaberat_teslim_eden=data.get('muhaberatTeslimEden')
+    )
+    db.session.add(hasar)
+    db.session.commit()
+    return jsonify({'status': 'ok'}), 201
+
+@app.route('/api/hasar_tazmin/<int:id>', methods=['PUT'])
+def api_update_hasar_tazmin(id):
+    data = request.get_json()
+    hasar = HasarTazmin.query.get_or_404(id)
+    
+    def parse_date(date_str):
+        if not date_str:
+            return None
+        try:
+            return datetime.fromisoformat(date_str)
+        except:
+            return None
+    
+    hasar.bolge = data.get('bolge')
+    hasar.yazi_no = data.get('yaziNo')
+    hasar.tarih = parse_date(data.get('tarih'))
+    hasar.asil_firma = data.get('asilFirma')
+    hasar.muhaberat_verilis_tarihi = parse_date(data.get('muhaberatVerilisTarihi'))
+    hasar.taseron = data.get('taseron')
+    hasar.durumu = data.get('durumu')
+    hasar.muhaberat_teslim_eden = data.get('muhaberatTeslimEden')
+    hasar.updated_at = datetime.utcnow()
+    
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+@app.route('/api/hasar_tazmin/<int:id>', methods=['DELETE'])
+def api_delete_hasar_tazmin(id):
+    hasar = HasarTazmin.query.get_or_404(id)
+    db.session.delete(hasar)
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+@app.route('/upload_hasar_tazmin_excel', methods=['POST'])
+def upload_hasar_tazmin_excel():
+    if 'excel_file' not in request.files:
+        flash('Dosya seçilmedi', 'danger')
+        return redirect(url_for('hasar_tazmin'))
+    
+    file = request.files['excel_file']
+    if file.filename == '':
+        flash('Geçersiz dosya', 'danger')
+        return redirect(url_for('hasar_tazmin'))
+
+    try:
+        df = pd.read_excel(file)
+        df.columns = [str(col).strip() for col in df.columns]
+        
+        required_columns = ['BÖLGE', 'YAZI NO', 'TARİH', 'ASIL FİRMA', 
+                          'MUHABERAT VERİLİŞ TARİHİ', 'TAŞERON', 'DURUMU', 'MUHABERAT TESLİM EDEN']
+        
+        for col in required_columns:
+            if col not in df.columns:
+                flash(f"Excel'de '{col}' sütunu eksik!", 'danger')
+                return redirect(url_for('hasar_tazmin'))
+        
+        def parse_excel_date(val):
+            if pd.isnull(val):
+                return None
+            try:
+                return pd.to_datetime(val)
+            except:
+                return None
+        
+        new_count = 0
+        for _, row in df.iterrows():
+            new_hasar = HasarTazmin(
+                bolge=str(row.get('BÖLGE', '')),
+                yazi_no=str(row.get('YAZI NO', '')),
+                tarih=parse_excel_date(row.get('TARİH')),
+                asil_firma=str(row.get('ASIL FİRMA', '')),
+                muhaberat_verilis_tarihi=parse_excel_date(row.get('MUHABERAT VERİLİŞ TARİHİ')),
+                taseron=str(row.get('TAŞERON', '')),
+                durumu=str(row.get('DURUMU', '')),
+                muhaberat_teslim_eden=str(row.get('MUHABERAT TESLİM EDEN', ''))
+            )
+            db.session.add(new_hasar)
+            new_count += 1
+        
+        db.session.commit()
+        flash(f'{new_count} yeni kayıt başarıyla eklendi', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Hata: {str(e)}', 'danger')
+    
+    return redirect(url_for('hasar_tazmin'))
+
+@app.route('/export_hasar_tazmin_excel')
+def export_hasar_tazmin_excel():
+    hasarlar = HasarTazmin.query.all()
+    
+    data = []
+    for hasar in hasarlar:
+        data.append({
+            'BÖLGE': hasar.bolge,
+            'YAZI NO': hasar.yazi_no,
+            'TARİH': hasar.tarih.strftime('%d.%m.%Y') if hasar.tarih else '',
+            'ASIL FİRMA': hasar.asil_firma,
+            'MUHABERAT VERİLİŞ TARİHİ': hasar.muhaberat_verilis_tarihi.strftime('%d.%m.%Y') if hasar.muhaberat_verilis_tarihi else '',
+            'TAŞERON': hasar.taseron,
+            'DURUMU': hasar.durumu,
+            'MUHABERAT TESLİM EDEN': hasar.muhaberat_teslim_eden
+        })
+    
+    df = pd.DataFrame(data)
+    output = BytesIO()
+    
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Hasar Tazmin', index=False)
+        worksheet = writer.sheets['Hasar Tazmin']
+        for i, col in enumerate(df.columns):
+            column_width = max(df[col].astype(str).map(len).max(), len(col)) + 2
+            worksheet.set_column(i, i, column_width)
+    
+    output.seek(0)
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'hasar_tazmin_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
     )
 
 if __name__ == '__main__':
