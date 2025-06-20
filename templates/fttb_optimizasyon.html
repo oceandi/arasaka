@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FTTB Optimizasyon - KAREL Network Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #1e3a8a;
+            --secondary-color: #2563eb;
+            --accent-color: #3b82f6;
+            --text-color: #f8fafc;
+            --menu-bg: #0f172a;
+            --content-bg: #1e293b;
+            --card-bg: #334155;
+            --border-color: #475569;
+            --success-color: #22c55e;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #06b6d4;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--content-bg);
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            width: 240px;
+            background-color: var(--menu-bg);
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .logo {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        
+        .logo h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+        
+        .logo .subtitle {
+            font-size: 12px;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .menu {
+            flex: 1;
+        }
+        
+        .menu ul {
+            list-style: none;
+        }
+        
+        .menu li {
+            margin-bottom: 5px;
+        }
+        
+        .menu a {
+            display: flex;
+            align-items: center;
+            color: var(--text-color);
+            text-decoration: none;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        
+        .menu a:hover, .menu a.active {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid var(--accent-color);
+        }
+        
+        .menu a i {
+            margin-right: 10px;
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        
+        .header h2 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .action-bar {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 15px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-color);
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .excel-container {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .excel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .excel-info {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+        }
+        
+        .table-wrapper {
+            overflow: auto;
+            max-height: calc(100vh - 300px);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--content-bg);
+        }
+        
+        thead {
+            position: sticky;
+            top: 0;
+            background-color: var(--primary-color);
+            z-index: 10;
+        }
+        
+        th {
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            white-space: nowrap;
+            border-right: 1px solid var(--border-color);
+        }
+        
+        th:last-child {
+            border-right: none;
+        }
+        
+        td {
+            padding: 10px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 13px;
+        }
+        
+        td:last-child {
+            border-right: none;
+        }
+        
+        tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .editable {
+            cursor: text;
+            position: relative;
+        }
+        
+        .editable:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        
+        .editable:focus {
+            outline: 2px solid var(--accent-color);
+            background-color: var(--content-bg);
+        }
+        
+        select {
+            background-color: var(--content-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 5px;
+            border-radius: 4px;
+            width: 100%;
+        }
+        
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+        }
+        
+        .status-yapildi {
+            background-color: rgba(34, 197, 94, 0.2);
+            color: var(--success-color);
+        }
+        
+        .status-yapilmadi {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: var(--danger-color);
+        }
+        
+        .action-cell {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .action-cell button {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .action-cell button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .action-cell button.edit {
+            color: var(--warning-color);
+        }
+        
+        .action-cell button.delete {
+            color: var(--danger-color);
+        }
+        
+        .action-cell button.save {
+            color: var(--success-color);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            overflow: auto;
+        }
+        
+        .modal-content {
+            background-color: var(--content-bg);
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 700px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .close {
+            color: var(--text-color);
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: var(--accent-color);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background-color: var(--content-bg);
+            color: var(--text-color);
+            font-size: 14px;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .form-grid .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .status-message {
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .status-message.success {
+            background-color: rgba(34, 197, 94, 0.2);
+            color: var(--success-color);
+            border: 1px solid var(--success-color);
+        }
+        
+        .status-message.error {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+        }
+        
+        .import-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: border-color 0.3s;
+            display: none;
+        }
+        
+        .import-area.active {
+            display: block;
+        }
+        
+        .import-area:hover {
+            border-color: var(--accent-color);
+        }
+        
+        .add-row-btn {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed var(--border-color);
+            background-color: transparent;
+            color: var(--accent-color);
+            cursor: pointer;
+            margin-top: 10px;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        
+        .add-row-btn:hover {
+            border-color: var(--accent-color);
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="logo">
+                <h1>KAREL</h1>
+                <div class="subtitle">Network Dashboard</div>
+            </div>
+            <div class="menu">
+                <ul>
+                    <li><a href="/browse"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                    <li><a href="/browse" onclick="showMapView(); return false;"><i class="fas fa-map-marked-alt"></i> Harita Görünümü</a></li>
+                    <li><a href="/browse"><i class="fas fa-network-wired"></i> Fiber Arızalar</a></li>
+                    <li><a href="/deplase_islah"><i class="fas fa-tools"></i> Deplase Islah Kablo Upgrade</a></li>
+                    <li><a href="/hasar_tazmin"><i class="fas fa-money-check-alt"></i> Hasar Tazmin</a></li>
+                    <li><a href="#" class="active"><i class="fas fa-building"></i> FTTB Optimizasyon</a></li>
+                    <li><a href="#"><i class="fas fa-sync-alt"></i> Kritik Modernizasyon</a></li>
+                    <li><a href="#"><i class="fas fa-download"></i> Raporlar</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="content">
+            <div class="header">
+                <h2>FTTB Optimizasyon</h2>
+                <div class="excel-info">
+                    <span>Toplam Kayıt: <strong id="totalCount">0</strong></span>
+                    <span>Son Güncelleme: <strong id="lastUpdate">-</strong></span>
+                </div>
+            </div>
+            
+            <div class="status-message" id="statusMessage"></div>
+            
+            <div class="import-area" id="importArea">
+                <i class="fas fa-file-excel" style="font-size: 48px; color: var(--accent-color); margin-bottom: 15px;"></i>
+                <h3>Excel Dosyası Yükle</h3>
+                <p>Excel dosyanızı buraya sürükleyin veya dosya seçmek için tıklayın</p>
+                <input type="file" id="fileInput" accept=".xlsx, .xls" style="display:none;">
+            </div>
+            
+            <div class="action-bar">
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="addNewRow()"><i class="fas fa-plus"></i> Yeni Satır</button>
+                    <button class="btn btn-success" onclick="toggleImport()"><i class="fas fa-file-import"></i> Import</button>
+                    <button class="btn btn-warning" onclick="exportToExcel()"><i class="fas fa-file-export"></i> Export</button>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="saveAllChanges()"><i class="fas fa-save"></i> Değişiklikleri Kaydet</button>
+                </div>
+            </div>
+            
+            <div class="excel-container">
+                <div class="table-wrapper">
+                    <table id="dataTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">ID</th>
+                                <th>YIL</th>
+                                <th>HAFTA</th>
+                                <th>DDO</th>
+                                <th>STATÜ</th>
+                                <th>ÖBEK</th>
+                                <th>FTTB RİNG NAME</th>
+                                <th>LOKASYON ID</th>
+                                <th>CI NAME</th>
+                                <th>AÇIKLAMA</th>
+                                <th>DURUM</th>
+                                <th style="width: 100px;">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Data will be loaded here -->
+                        </tbody>
+                    </table>
+                    <button class="add-row-btn" onclick="addNewRow()">
+                        <i class="fas fa-plus"></i> Yeni Satır Ekle
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add/Edit Modal -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Yeni Kayıt Ekle</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <form id="detailForm">
+                <input type="hidden" id="rowId">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="yil">YIL</label>
+                        <input type="text" id="yil" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="hafta">HAFTA</label>
+                        <input type="text" id="hafta" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="ddo">DDO</label>
+                        <input type="text" id="ddo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="statu">STATÜ</label>
+                        <input type="text" id="statu">
+                    </div>
+                    <div class="form-group">
+                        <label for="obek">ÖBEK</label>
+                        <input type="text" id="obek">
+                    </div>
+                    <div class="form-group">
+                        <label for="fttbRingName">FTTB RİNG NAME</label>
+                        <input type="text" id="fttbRingName">
+                    </div>
+                    <div class="form-group">
+                        <label for="lokasyonId">LOKASYON ID</label>
+                        <input type="text" id="lokasyonId">
+                    </div>
+                    <div class="form-group">
+                        <label for="ciName">CI NAME</label>
+                        <input type="text" id="ciName">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="aciklama">AÇIKLAMA</label>
+                        <textarea id="aciklama" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="durum">DURUM</label>
+                        <select id="durum" required>
+                            <option value="">Seçiniz</option>
+                            <option value="YAPILDI">YAPILDI</option>
+                            <option value="YAPILMADI">YAPILMADI</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                    <button type="button" class="btn" onclick="closeModal()">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        let data = [];
+        let editingRows = new Set();
+        let pendingChanges = new Map();
+        
+        // Load data on page load
+        async function loadData() {
+            try {
+                const response = await fetch('/api/fttb_optimizasyon');
+                data = await response.json();
+                renderTable();
+                updateStats();
+            } catch (error) {
+                console.error('Veri yükleme hatası:', error);
+                showMessage('Veri yüklenirken hata oluştu!', 'error');
+            }
+        }
+        
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            data.forEach(item => {
+                const row = createTableRow(item);
+                tbody.appendChild(row);
+            });
+        }
+        
+        function createTableRow(item) {
+            const row = document.createElement('tr');
+            row.dataset.id = item.id;
+            
+            const isEditing = editingRows.has(item.id);
+            
+            row.innerHTML = `
+                <td>${item.id || 'Yeni'}</td>
+                <td class="editable" contenteditable="${isEditing}" data-field="yil">${item.yil || ''}</td>
+                <td class="editable" contenteditable="${isEditing}" data-field="hafta">${item.hafta || ''}</td>
+                <td class="editable" contenteditable="${isEditing}" data-field="ddo">${item.ddo || ''}</td>
+                <td class="editable" contenteditable="${isEditing}" data-field="statu">${item.statu || ''}</td>
+                <td class="editable" contenteditable="${isEditing}" data-field="obek">${item.obek || ''}</td>
+                <td class="editable" contenteditable="${isEditing}" data-field="fttbRingName">${item.fttbRingName || ''}</td>
+                <td class="editable" contenteditable="${isEditing}" data-field="lokasyonId">${item.lokasyonId || ''}</td>
+                <td class="editable" contenteditable="${isEditing}" data-field="ciName">${item.ciName || ''}</td>
+                <td class="editable" contenteditable="${isEditing}" data-field="aciklama">${item.aciklama || ''}</td>
+                <td>
+                    ${isEditing ? createSelectHTML('durum', item.durum) : 
+                    `<span class="status-badge ${item.durum === 'YAPILDI' ? 'status-yapildi' : 'status-yapilmadi'}">${item.durum || ''}</span>`}
+                </td>
+                <td class="action-cell">
+                    ${isEditing ? 
+                    `<button class="save" onclick="saveRow(${item.id})" title="Kaydet"><i class="fas fa-check"></i></button>
+                     <button class="delete" onclick="cancelEdit(${item.id})" title="İptal"><i class="fas fa-times"></i></button>` :
+                    `<button class="edit" onclick="editRow(${item.id})" title="Düzenle"><i class="fas fa-edit"></i></button>
+                     <button class="delete" onclick="deleteRow(${item.id})" title="Sil"><i class="fas fa-trash"></i></button>`}
+                </td>
+            `;
+            
+            // Add event listeners for contenteditable cells
+            if (isEditing) {
+                row.querySelectorAll('.editable').forEach(cell => {
+                    cell.addEventListener('input', function() {
+                        const field = this.dataset.field;
+                        const value = this.textContent;
+                        updatePendingChange(item.id, field, value);
+                    });
+                });
+                
+                row.querySelectorAll('select').forEach(select => {
+                    select.addEventListener('change', function() {
+                        const field = this.dataset.field;
+                        const value = this.value;
+                        updatePendingChange(item.id, field, value);
+                    });
+                });
+            }
+            
+            return row;
+        }
+        
+        function createSelectHTML(field, value) {
+            if (field === 'durum') {
+                return `
+                    <select data-field="${field}">
+                        <option value="">Seçiniz</option>
+                        <option value="YAPILDI" ${value === 'YAPILDI' ? 'selected' : ''}>YAPILDI</option>
+                        <option value="YAPILMADI" ${value === 'YAPILMADI' ? 'selected' : ''}>YAPILMADI</option>
+                    </select>
+                `;
+            }
+        }
+        
+        function updatePendingChange(id, field, value) {
+            if (!pendingChanges.has(id)) {
+                pendingChanges.set(id, {});
+            }
+            pendingChanges.get(id)[field] = value;
+        }
+        
+        function editRow(id) {
+            editingRows.add(id);
+            const item = data.find(d => d.id === id);
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            const newRow = createTableRow(item);
+            row.replaceWith(newRow);
+        }
+        
+        function cancelEdit(id) {
+            editingRows.delete(id);
+            pendingChanges.delete(id);
+            const item = data.find(d => d.id === id);
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            const newRow = createTableRow(item);
+            row.replaceWith(newRow);
+        }
+        
+        async function saveRow(id) {
+            const changes = pendingChanges.get(id);
+            if (!changes || Object.keys(changes).length === 0) {
+                cancelEdit(id);
+                return;
+            }
+            
+            const item = data.find(d => d.id === id);
+            const updatedItem = { ...item, ...changes };
+            
+            try {
+                const response = await fetch(`/api/fttb_optimizasyon/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedItem)
+                });
+                
+                if (response.ok) {
+                    Object.assign(item, changes);
+                    editingRows.delete(id);
+                    pendingChanges.delete(id);
+                    const row = document.querySelector(`tr[data-id="${id}"]`);
+                    const newRow = createTableRow(item);
+                    row.replaceWith(newRow);
+                    showMessage('Kayıt güncellendi!', 'success');
+                } else {
+                    showMessage('Güncelleme başarısız!', 'error');
+                }
+            } catch (error) {
+                console.error('Güncelleme hatası:', error);
+                showMessage('Güncelleme hatası!', 'error');
+            }
+        }
+        
+        async function deleteRow(id) {
+            if (!confirm('Bu kaydı silmek istediğinize emin misiniz?')) return;
+            
+            try {
+                const response = await fetch(`/api/fttb_optimizasyon/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    data = data.filter(d => d.id !== id);
+                    renderTable();
+                    updateStats();
+                    showMessage('Kayıt silindi!', 'success');
+                } else {
+                    showMessage('Silme işlemi başarısız!', 'error');
+                }
+            } catch (error) {
+                console.error('Silme hatası:', error);
+                showMessage('Silme hatası!', 'error');
+            }
+        }
+        
+        async function saveAllChanges() {
+            if (pendingChanges.size === 0) {
+                showMessage('Kaydedilecek değişiklik yok!', 'error');
+                return;
+            }
+            
+            let successCount = 0;
+            let errorCount = 0;
+            
+            for (const [id, changes] of pendingChanges) {
+                const item = data.find(d => d.id === id);
+                const updatedItem = { ...item, ...changes };
+                
+                try {
+                    const response = await fetch(`/api/fttb_optimizasyon/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(updatedItem)
+                    });
+                    
+                    if (response.ok) {
+                        Object.assign(item, changes);
+                        editingRows.delete(id);
+                        successCount++;
+                    } else {
+                        errorCount++;
+                    }
+                } catch (error) {
+                    console.error('Güncelleme hatası:', error);
+                    errorCount++;
+                }
+            }
+            
+            pendingChanges.clear();
+            renderTable();
+            
+            if (successCount > 0 && errorCount === 0) {
+                showMessage(`${successCount} kayıt başarıyla güncellendi!`, 'success');
+            } else if (successCount > 0 && errorCount > 0) {
+                showMessage(`${successCount} kayıt güncellendi, ${errorCount} hata oluştu!`, 'warning');
+            } else {
+                showMessage('Güncelleme başarısız!', 'error');
+            }
+        }
+        
+        function addNewRow() {
+            document.getElementById('modalTitle').innerText = 'Yeni Kayıt Ekle';
+            document.getElementById('detailForm').reset();
+            document.getElementById('rowId').value = '';
+            document.getElementById('detailModal').style.display = 'block';
+        }
+        
+        function closeModal() {
+            document.getElementById('detailModal').style.display = 'none';
+        }
+        
+        document.getElementById('detailForm').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                yil: document.getElementById('yil').value,
+                hafta: document.getElementById('hafta').value,
+                ddo: document.getElementById('ddo').value,
+                statu: document.getElementById('statu').value,
+                obek: document.getElementById('obek').value,
+                fttbRingName: document.getElementById('fttbRingName').value,
+                lokasyonId: document.getElementById('lokasyonId').value,
+                ciName: document.getElementById('ciName').value,
+                aciklama: document.getElementById('aciklama').value,
+                durum: document.getElementById('durum').value
+            };
+            
+            try {
+                const response = await fetch('/api/fttb_optimizasyon', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (response.ok) {
+                    showMessage('Yeni kayıt eklendi!', 'success');
+                    closeModal();
+                    loadData();
+                } else {
+                    showMessage('Kayıt eklenemedi!', 'error');
+                }
+            } catch (error) {
+                console.error('Ekleme hatası:', error);
+                showMessage('Ekleme hatası!', 'error');
+            }
+        };
+        
+        function toggleImport() {
+            const importArea = document.getElementById('importArea');
+            importArea.classList.toggle('active');
+        }
+        
+        function exportToExcel() {
+            window.location.href = '/export_fttb_optimizasyon_excel';
+        }
+        
+        function updateStats() {
+            document.getElementById('totalCount').innerText = data.length;
+            document.getElementById('lastUpdate').innerText = new Date().toLocaleString('tr-TR');
+        }
+        
+        function showMessage(message, type) {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.innerText = message;
+            statusMessage.className = `status-message ${type}`;
+            statusMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Import functionality
+        document.getElementById('importArea').onclick = function() {
+            document.getElementById('fileInput').click();
+        };
+        
+        document.getElementById('importArea').ondragover = function(e) {
+            e.preventDefault();
+            this.style.borderColor = 'var(--accent-color)';
+        };
+        
+        document.getElementById('importArea').ondragleave = function(e) {
+            e.preventDefault();
+            this.style.borderColor = '';
+        };
+        
+        document.getElementById('importArea').ondrop = function(e) {
+            e.preventDefault();
+            this.style.borderColor = '';
+            const files = e.dataTransfer.files;
+            if (files.length > 0) uploadExcel(files[0]);
+        };
+        
+        document.getElementById('fileInput').onchange = function(e) {
+            if (this.files.length > 0) uploadExcel(this.files[0]);
+        };
+        
+        function uploadExcel(file) {
+            const formData = new FormData();
+            formData.append('excel_file', file);
+            
+            fetch('/upload_fttb_optimizasyon_excel', {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    loadData();
+                    toggleImport();
+                }
+            }).catch(error => {
+                console.error('Upload hatası:', error);
+                showMessage('Yükleme başarısız!', 'error');
+            });
+        }
+        
+        // Modal close events
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('detailModal')) {
+                closeModal();
+            }
+        };
+        
+        // Load data on page load
+        loadData();
+    </script>
+</body>
+</html>

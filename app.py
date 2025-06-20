@@ -86,6 +86,21 @@ class HasarTazmin(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+class FTTBOptimizasyon(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    yil = db.Column(db.String(10))
+    hafta = db.Column(db.String(10))
+    ddo = db.Column(db.String(100))
+    statu = db.Column(db.String(100))
+    obek = db.Column(db.String(100))
+    fttb_ring_name = db.Column(db.String(200))
+    lokasyon_id = db.Column(db.String(100))
+    ci_name = db.Column(db.String(200))
+    aciklama = db.Column(db.Text)
+    durum = db.Column(db.String(20))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 @app.route('/')
 def home():
     return redirect(url_for('browse'))
@@ -1024,6 +1039,161 @@ def export_hasar_tazmin_excel():
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
         download_name=f'hasar_tazmin_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+    )
+
+@app.route('/fttb_optimizasyon')
+def fttb_optimizasyon():
+    total = FTTBOptimizasyon.query.count()
+    return render_template('fttb_optimizasyon.html', total=total)
+
+@app.route('/api/fttb_optimizasyon')
+def api_fttb_optimizasyon():
+    fttb_list = FTTBOptimizasyon.query.all()
+    return jsonify([{
+        'id': f.id,
+        'yil': f.yil,
+        'hafta': f.hafta,
+        'ddo': f.ddo,
+        'statu': f.statu,
+        'obek': f.obek,
+        'fttbRingName': f.fttb_ring_name,
+        'lokasyonId': f.lokasyon_id,
+        'ciName': f.ci_name,
+        'aciklama': f.aciklama,
+        'durum': f.durum
+    } for f in fttb_list])
+
+@app.route('/api/fttb_optimizasyon', methods=['POST'])
+def api_add_fttb_optimizasyon():
+    data = request.get_json()
+    
+    fttb = FTTBOptimizasyon(
+        yil=data.get('yil'),
+        hafta=data.get('hafta'),
+        ddo=data.get('ddo'),
+        statu=data.get('statu'),
+        obek=data.get('obek'),
+        fttb_ring_name=data.get('fttbRingName'),
+        lokasyon_id=data.get('lokasyonId'),
+        ci_name=data.get('ciName'),
+        aciklama=data.get('aciklama'),
+        durum=data.get('durum')
+    )
+    db.session.add(fttb)
+    db.session.commit()
+    return jsonify({'status': 'ok'}), 201
+
+@app.route('/api/fttb_optimizasyon/<int:id>', methods=['PUT'])
+def api_update_fttb_optimizasyon(id):
+    data = request.get_json()
+    fttb = FTTBOptimizasyon.query.get_or_404(id)
+    
+    fttb.yil = data.get('yil')
+    fttb.hafta = data.get('hafta')
+    fttb.ddo = data.get('ddo')
+    fttb.statu = data.get('statu')
+    fttb.obek = data.get('obek')
+    fttb.fttb_ring_name = data.get('fttbRingName')
+    fttb.lokasyon_id = data.get('lokasyonId')
+    fttb.ci_name = data.get('ciName')
+    fttb.aciklama = data.get('aciklama')
+    fttb.durum = data.get('durum')
+    fttb.updated_at = datetime.utcnow()
+    
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+@app.route('/api/fttb_optimizasyon/<int:id>', methods=['DELETE'])
+def api_delete_fttb_optimizasyon(id):
+    fttb = FTTBOptimizasyon.query.get_or_404(id)
+    db.session.delete(fttb)
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+@app.route('/upload_fttb_optimizasyon_excel', methods=['POST'])
+def upload_fttb_optimizasyon_excel():
+    if 'excel_file' not in request.files:
+        flash('Dosya seçilmedi', 'danger')
+        return redirect(url_for('fttb_optimizasyon'))
+    
+    file = request.files['excel_file']
+    if file.filename == '':
+        flash('Geçersiz dosya', 'danger')
+        return redirect(url_for('fttb_optimizasyon'))
+
+    try:
+        df = pd.read_excel(file)
+        df.columns = [str(col).strip() for col in df.columns]
+        
+        required_columns = ['YIL', 'HAFTA', 'DDO', 'STATÜ', 'ÖBEK', 
+                          'FTTB RİNG NAME', 'LOKASYON ID', 'CI NAME', 'AÇIKLAMA', 'DURUM']
+        
+        for col in required_columns:
+            if col not in df.columns:
+                flash(f"Excel'de '{col}' sütunu eksik!", 'danger')
+                return redirect(url_for('fttb_optimizasyon'))
+        
+        new_count = 0
+        for _, row in df.iterrows():
+            new_fttb = FTTBOptimizasyon(
+                yil=str(row.get('YIL', '')),
+                hafta=str(row.get('HAFTA', '')),
+                ddo=str(row.get('DDO', '')),
+                statu=str(row.get('STATÜ', '')),
+                obek=str(row.get('ÖBEK', '')),
+                fttb_ring_name=str(row.get('FTTB RİNG NAME', '')),
+                lokasyon_id=str(row.get('LOKASYON ID', '')),
+                ci_name=str(row.get('CI NAME', '')),
+                aciklama=str(row.get('AÇIKLAMA', '')),
+                durum=str(row.get('DURUM', ''))
+            )
+            db.session.add(new_fttb)
+            new_count += 1
+        
+        db.session.commit()
+        flash(f'{new_count} yeni kayıt başarıyla eklendi', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Hata: {str(e)}', 'danger')
+    
+    return redirect(url_for('fttb_optimizasyon'))
+
+@app.route('/export_fttb_optimizasyon_excel')
+def export_fttb_optimizasyon_excel():
+    fttb_list = FTTBOptimizasyon.query.all()
+    
+    data = []
+    for fttb in fttb_list:
+        data.append({
+            'YIL': fttb.yil,
+            'HAFTA': fttb.hafta,
+            'DDO': fttb.ddo,
+            'STATÜ': fttb.statu,
+            'ÖBEK': fttb.obek,
+            'FTTB RİNG NAME': fttb.fttb_ring_name,
+            'LOKASYON ID': fttb.lokasyon_id,
+            'CI NAME': fttb.ci_name,
+            'AÇIKLAMA': fttb.aciklama,
+            'DURUM': fttb.durum
+        })
+    
+    df = pd.DataFrame(data)
+    output = BytesIO()
+    
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='FTTB Optimizasyon', index=False)
+        worksheet = writer.sheets['FTTB Optimizasyon']
+        for i, col in enumerate(df.columns):
+            column_width = max(df[col].astype(str).map(len).max(), len(col)) + 2
+            worksheet.set_column(i, i, column_width)
+    
+    output.seek(0)
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'fttb_optimizasyon_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
     )
 
 if __name__ == '__main__':
