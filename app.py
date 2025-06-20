@@ -101,6 +101,20 @@ class FTTBOptimizasyon(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+class KritikModernizasyon(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    yil = db.Column(db.String(10))
+    hafta = db.Column(db.String(10))
+    ddo = db.Column(db.String(100))
+    bulten_no = db.Column(db.String(100))
+    lokasyon_id = db.Column(db.String(100))
+    is_tipi = db.Column(db.String(200))
+    lokasyon = db.Column(db.String(200))
+    aciklama = db.Column(db.Text)
+    durumu = db.Column(db.String(20))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 @app.route('/')
 def home():
     return redirect(url_for('browse'))
@@ -1194,6 +1208,156 @@ def export_fttb_optimizasyon_excel():
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
         download_name=f'fttb_optimizasyon_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+    )
+
+@app.route('/kritik_modernizasyon')
+def kritik_modernizasyon():
+    total = KritikModernizasyon.query.count()
+    return render_template('kritik_modernizasyon.html', total=total)
+
+@app.route('/api/kritik_modernizasyon')
+def api_kritik_modernizasyon():
+    kritik_list = KritikModernizasyon.query.all()
+    return jsonify([{
+        'id': k.id,
+        'yil': k.yil,
+        'hafta': k.hafta,
+        'ddo': k.ddo,
+        'bultenNo': k.bulten_no,
+        'lokasyonId': k.lokasyon_id,
+        'isTipi': k.is_tipi,
+        'lokasyon': k.lokasyon,
+        'aciklama': k.aciklama,
+        'durumu': k.durumu
+    } for k in kritik_list])
+
+@app.route('/api/kritik_modernizasyon', methods=['POST'])
+def api_add_kritik_modernizasyon():
+    data = request.get_json()
+    
+    kritik = KritikModernizasyon(
+        yil=data.get('yil'),
+        hafta=data.get('hafta'),
+        ddo=data.get('ddo'),
+        bulten_no=data.get('bultenNo'),
+        lokasyon_id=data.get('lokasyonId'),
+        is_tipi=data.get('isTipi'),
+        lokasyon=data.get('lokasyon'),
+        aciklama=data.get('aciklama'),
+        durumu=data.get('durumu')
+    )
+    db.session.add(kritik)
+    db.session.commit()
+    return jsonify({'status': 'ok'}), 201
+
+@app.route('/api/kritik_modernizasyon/<int:id>', methods=['PUT'])
+def api_update_kritik_modernizasyon(id):
+    data = request.get_json()
+    kritik = KritikModernizasyon.query.get_or_404(id)
+    
+    kritik.yil = data.get('yil')
+    kritik.hafta = data.get('hafta')
+    kritik.ddo = data.get('ddo')
+    kritik.bulten_no = data.get('bultenNo')
+    kritik.lokasyon_id = data.get('lokasyonId')
+    kritik.is_tipi = data.get('isTipi')
+    kritik.lokasyon = data.get('lokasyon')
+    kritik.aciklama = data.get('aciklama')
+    kritik.durumu = data.get('durumu')
+    kritik.updated_at = datetime.utcnow()
+    
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+@app.route('/api/kritik_modernizasyon/<int:id>', methods=['DELETE'])
+def api_delete_kritik_modernizasyon(id):
+    kritik = KritikModernizasyon.query.get_or_404(id)
+    db.session.delete(kritik)
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+@app.route('/upload_kritik_modernizasyon_excel', methods=['POST'])
+def upload_kritik_modernizasyon_excel():
+    if 'excel_file' not in request.files:
+        flash('Dosya seçilmedi', 'danger')
+        return redirect(url_for('kritik_modernizasyon'))
+    
+    file = request.files['excel_file']
+    if file.filename == '':
+        flash('Geçersiz dosya', 'danger')
+        return redirect(url_for('kritik_modernizasyon'))
+
+    try:
+        df = pd.read_excel(file)
+        df.columns = [str(col).strip() for col in df.columns]
+        
+        required_columns = ['YIL', 'HAFTA', 'DDO', 'BÜLTEN NO', 'LOKASYON ID', 
+                          'İŞ TİPİ', 'LOKASYON', 'AÇIKLAMA', 'DURUMU']
+        
+        for col in required_columns:
+            if col not in df.columns:
+                flash(f"Excel'de '{col}' sütunu eksik!", 'danger')
+                return redirect(url_for('kritik_modernizasyon'))
+        
+        new_count = 0
+        for _, row in df.iterrows():
+            new_kritik = KritikModernizasyon(
+                yil=str(row.get('YIL', '')),
+                hafta=str(row.get('HAFTA', '')),
+                ddo=str(row.get('DDO', '')),
+                bulten_no=str(row.get('BÜLTEN NO', '')),
+                lokasyon_id=str(row.get('LOKASYON ID', '')),
+                is_tipi=str(row.get('İŞ TİPİ', '')),
+                lokasyon=str(row.get('LOKASYON', '')),
+                aciklama=str(row.get('AÇIKLAMA', '')),
+                durumu=str(row.get('DURUMU', ''))
+            )
+            db.session.add(new_kritik)
+            new_count += 1
+        
+        db.session.commit()
+        flash(f'{new_count} yeni kayıt başarıyla eklendi', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Hata: {str(e)}', 'danger')
+    
+    return redirect(url_for('kritik_modernizasyon'))
+
+@app.route('/export_kritik_modernizasyon_excel')
+def export_kritik_modernizasyon_excel():
+    kritik_list = KritikModernizasyon.query.all()
+    
+    data = []
+    for kritik in kritik_list:
+        data.append({
+            'YIL': kritik.yil,
+            'HAFTA': kritik.hafta,
+            'DDO': kritik.ddo,
+            'BÜLTEN NO': kritik.bulten_no,
+            'LOKASYON ID': kritik.lokasyon_id,
+            'İŞ TİPİ': kritik.is_tipi,
+            'LOKASYON': kritik.lokasyon,
+            'AÇIKLAMA': kritik.aciklama,
+            'DURUMU': kritik.durumu
+        })
+    
+    df = pd.DataFrame(data)
+    output = BytesIO()
+    
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Kritik Modernizasyon', index=False)
+        worksheet = writer.sheets['Kritik Modernizasyon']
+        for i, col in enumerate(df.columns):
+            column_width = max(df[col].astype(str).map(len).max(), len(col)) + 2
+            worksheet.set_column(i, i, column_width)
+    
+    output.seek(0)
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'kritik_modernizasyon_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
     )
 
 if __name__ == '__main__':
