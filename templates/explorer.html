@@ -1129,8 +1129,8 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="hasaeTazminSureci">Hasae Tazmin Süreci</label>
-                            <select id="hasaeTazminSureci" name="hasaeTazminSureci">
+                            <label for="hasarTazminSureci">Hasar Tazmin Süreci</label>
+                            <select id="hasarTazminSureci" name="hasarTazminSureci">
                                 <option value="">Seçiniz</option>
                                 <option value="Evet">Evet</option>
                                 <option value="Hayır">Hayır</option>
@@ -1356,7 +1356,7 @@
                                     <h4>Operasyonel Durum</h4>
                                     <div class="detail-item"><span class="label">Refakat Sağlandı mı?:</span><span class="value status-badge ${item.refakatSaglandiMi === 'Evet' ? 'status-ok' : 'status-warning'}">${item.refakatSaglandiMi || 'Hayır'}</span></div>
                                     <div class="detail-item"><span class="label">Deplase Islah İhtiyacı var mı:</span><span class="value status-badge ${item.deplaseIslahIhtiyaci === 'Evet' ? 'status-warning' : 'status-ok'}">${item.deplaseIslahIhtiyaci || 'Hayır'}</span></div>
-                                    <div class="detail-item"><span class="label">Hasae Tazmin Süreci:</span><span class="value status-badge ${item.hasaeTazminSureci === 'Evet' ? 'status-warning' : 'status-ok'}">${item.hasaeTazminSureci || 'Hayır'}</span></div>
+                                    <div class="detail-item"><span class="label">Hasar Tazmin Süreci:</span><span class="value status-badge ${item.hasarTazminSureci === 'Evet' ? 'status-warning' : 'status-ok'}">${item.hasarTazminSureci || 'Hayır'}</span></div>
                                     <div class="detail-item"><span class="label">OTDR Ölçüm Bilgileri:</span><span class="value">${item.otdrOlcumBilgileri || '-'}</span></div>
                                 </div>
                                 <div class="detail-section">
@@ -1553,7 +1553,7 @@
                 document.getElementById('aciklama').value = item.aciklama || '';
                 document.getElementById('refakatSaglandiMi').value = item.refakatSaglandiMi || '';
                 document.getElementById('deplaseIslahIhtiyaci').value = item.deplaseIslahIhtiyaci || '';
-                document.getElementById('hasaeTazminSureci').value = item.hasaeTazminSureci || '';
+                document.getElementById('hasarTazminSureci').value = item.hasarTazminSureci || '';
                 document.getElementById('otdrOlcumBilgileri').value = item.otdrOlcumBilgileri || '';
                 
                 const modal = document.getElementById('detail-modal');
