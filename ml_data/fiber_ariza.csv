@@ -1,0 +1,4 @@
+id,hafta,bolge,bulten_no,il,guzergah,lokasyon,ariza_baslangic,ariza_bitis,ariza_konsolide,ariza_kok_neden,hags_asildi_mi,refakat_durumu,servis_etkisi,ariza_suresi,kordinat_a,kordinat_b,kablo_tipi,hags_suresi,kesinti_suresi,kalici_cozum,kullanilan_malzeme,aciklama,serivs_etkisi
+1,W02,BURSA,10099810779,CANAKKALE,CANAKKALE MERKEZ - CANAKKALE EZINE,Şehirler arası,2025-01-06 06:20:00.000000,2025-01-06 12:37:00.000000,Özel Kurum Çalışması,Doğalgaz Firması Çalışması,Evet,Hayır,,06:17,,,,,,Evet,,,
+2,W19,BURSA,10105742802,BURSA,BURSA KARACABEY - BALIKESIR KARESI,,2025-05-08 08:25:00.000000,2025-05-08 10:13:00.000000,Resmi Kurum Kazı Çalışması,TC Karayolları Çalışması,,,,01:48,,,,,,Hayır,,,
+3,W19,BURSA,10105742803,BURSA,EDIRNE PISALA - SINIR KAPISI,,,,Resmi Kurum Kazı Çalışması,TC Karayolları Çalışması,,,,01:48,,,,,,Evet,,,

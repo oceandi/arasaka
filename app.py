@@ -8,6 +8,9 @@ import simplekml
 from io import BytesIO
 import zipfile
 import locale
+from ai_integration import FiberArizaAI
+import requests
+from ai_config import AI_CONFIG
 
 # Türkçe locale ayarla
 try:
@@ -26,6 +29,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///fiberariza.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+ai = FiberArizaAI()
+insights = ai.generate_dashboard_insights()
+OLLAMA_URL = "http://localhost:11434"
+AI_MODEL = "deepseek-r1:7b"
 
 # Uygulamanın bulunduğu dizinde 'files' klasörü oluştur
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'files')
@@ -118,6 +125,10 @@ class KritikModernizasyon(db.Model):
 @app.route('/')
 def home():
     return redirect(url_for('browse'))
+
+@app.route('/api/ai_insights')
+def api_ai_insights():
+    return jsonify(insights)
 
 @app.route('/browse/')
 @app.route('/browse/<path:subpath>')
@@ -1359,6 +1370,259 @@ def export_kritik_modernizasyon_excel():
         as_attachment=True,
         download_name=f'kritik_modernizasyon_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
     )
+
+@app.route('/api/ai/analyze', methods=['POST'])
+def ai_analyze():
+    """AI ile arıza analizi"""
+    data = request.get_json()
+    prompt = data.get('prompt', '')
+    
+    # Veritabanı context'i ekle
+    total_records = FiberAriza.query.count()
+    hags_count = FiberAriza.query.filter_by(hags_asildi_mi='Evet').count()
+    solved_count = FiberAriza.query.filter_by(kalici_cozum='Evet').count()
+    
+    context = f"""
+    Fiber optik arıza takip sistemi verileri:
+    - Toplam arıza: {total_records}
+    - HAGS aşan: {hags_count} (%{(hags_count/total_records*100) if total_records > 0 else 0:.1f})
+    - Çözülen: {solved_count} (%{(solved_count/total_records*100) if total_records > 0 else 0:.1f})
+    
+    Kullanıcı sorusu: {prompt}
+    """
+    
+    try:
+        response = requests.post(
+            f"{OLLAMA_URL}/api/generate",
+            json={
+                "model": AI_MODEL,
+                "prompt": context,
+                "stream": False
+            },
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            ai_response = response.json().get("response", "")
+            return jsonify({
+                "success": True,
+                "response": ai_response,
+                "model": AI_MODEL
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": f"Model hatası: {response.status_code}"
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/ai/insights')
+def ai_insights():
+    """Dashboard için AI içgörüleri"""
+    # Veritabanı istatistikleri
+    total = FiberAriza.query.count()
+    
+    # Bölgesel analiz
+    from sqlalchemy import func
+    bolge_stats = db.session.query(
+        FiberAriza.bolge,
+        func.count(FiberAriza.id).label('count')
+    ).group_by(FiberAriza.bolge).all()
+    
+    # En riskli bölgeler
+    risk_areas = []
+    for bolge, count in bolge_stats:
+        if count > 5:  # Eşik değer
+            risk_areas.append({
+                "area": bolge,
+                "risk_score": min(count / 10, 1.0),
+                "failure_count": count
+            })
+    
+    # AI tahminleri
+    predictions = []
+    if risk_areas:
+        predictions.append({
+            "type": "high_risk_warning",
+            "message": f"{len(risk_areas)} bölgede yüksek arıza riski tespit edildi",
+            "areas": [area['area'] for area in risk_areas[:3]]
+        })
+    
+    # HAGS analizi
+    hags_count = FiberAriza.query.filter_by(hags_asildi_mi='Evet').count()
+    if total > 0 and (hags_count / total) > 0.2:
+        predictions.append({
+            "type": "hags_alert",
+            "message": f"HAGS aşım oranı %{(hags_count/total*100):.1f} - Kritik seviyede",
+            "recommendation": "Ekip sayısını artırın veya süreç optimizasyonu yapın"
+        })
+    
+    return jsonify({
+        "total_records": total,
+        "risk_areas": risk_areas,
+        "predictions": predictions,
+        "generated_at": datetime.now().isoformat()
+    })
+
+@app.route('/api/ai/chat', methods=['POST'])
+def ai_chat():
+    """Sohbet benzeri AI etkileşimi"""
+    data = request.get_json()
+    message = data.get('message', '')
+    
+    # Mesaj geçmişi (opsiyonel - session'da tutulabilir)
+    history = data.get('history', [])
+    
+    # Son arızalar
+    recent_failures = FiberAriza.query.order_by(
+        FiberAriza.ariza_baslangic.desc()
+    ).limit(5).all()
+    
+    context = "Son 5 arıza:\n"
+    for ariza in recent_failures:
+        context += f"- {ariza.bolge} / {ariza.il}: {ariza.ariza_kok_neden}\n"
+    
+    full_prompt = f"""
+    Sen bir fiber optik arıza uzmanısın. 
+    
+    {context}
+    
+    Kullanıcı: {message}
+    Asistan:
+    """
+    
+    try:
+        response = requests.post(
+            f"{OLLAMA_URL}/api/generate",
+            json={
+                "model": AI_MODEL,
+                "prompt": full_prompt,
+                "stream": False,
+                "temperature": 0.7
+            },
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            ai_response = response.json().get("response", "")
+            return jsonify({
+                "success": True,
+                "message": ai_response
+            })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": "AI şu anda kullanılamıyor. Lütfen daha sonra tekrar deneyin."
+        }), 500
+
+@app.route('/api/ai/report/<string:report_type>')
+def ai_generate_report(report_type):
+    """AI ile otomatik rapor üretimi"""
+    
+    if report_type == 'weekly':
+        # Haftalık rapor
+        prompt = """
+        Haftalık fiber arıza raporu hazırla. Şunları içersin:
+        1. Genel durum özeti
+        2. En çok arıza olan bölgeler
+        3. HAGS performansı
+        4. Öneriler
+        """
+    elif report_type == 'risk':
+        # Risk analizi raporu
+        prompt = """
+        Risk analizi raporu hazırla:
+        1. Yüksek riskli bölgeler
+        2. Tekrarlayan arıza nedenleri
+        3. Önleyici tedbirler
+        4. Yatırım önerileri
+        """
+    else:
+        return jsonify({"error": "Geçersiz rapor tipi"}), 400
+    
+    # Veritabanından veri topla
+    stats = {
+        "total": FiberAriza.query.count(),
+        "solved": FiberAriza.query.filter_by(kalici_cozum='Evet').count(),
+        "hags_exceeded": FiberAriza.query.filter_by(hags_asildi_mi='Evet').count()
+    }
+    
+    full_prompt = f"""
+    {prompt}
+    
+    Veriler:
+    - Toplam arıza: {stats['total']}
+    - Çözülen: {stats['solved']}
+    - HAGS aşan: {stats['hags_exceeded']}
+    
+    Profesyonel bir rapor formatında yaz.
+    """
+    
+    try:
+        response = requests.post(
+            f"{OLLAMA_URL}/api/generate",
+            json={
+                "model": AI_MODEL,
+                "prompt": full_prompt,
+                "stream": False,
+                "temperature": 0.3  # Daha tutarlı çıktı için
+            },
+            timeout=60  # Rapor için daha uzun timeout
+        )
+        
+        if response.status_code == 200:
+            report = response.json().get("response", "")
+            
+            # Raporu kaydet
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"ai_report_{report_type}_{timestamp}.txt"
+            filepath = os.path.join("files", filename)
+            
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(report)
+            
+            return jsonify({
+                "success": True,
+                "report": report,
+                "filename": filename
+            })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+# Dashboard'a AI widget eklemek için
+@app.route('/api/ai/widget')
+def ai_widget_data():
+    """Dashboard AI widget verisi"""
+    # Basit tahminler
+    total = FiberAriza.query.count()
+    
+    # Son 7 günün arıza ortalaması
+    from datetime import datetime, timedelta
+    seven_days_ago = datetime.now() - timedelta(days=7)
+    recent_count = FiberAriza.query.filter(
+        FiberAriza.ariza_baslangic >= seven_days_ago
+    ).count()
+    
+    daily_avg = recent_count / 7 if recent_count > 0 else 0
+    
+    # Basit tahmin
+    next_week_prediction = int(daily_avg * 7 * 1.1)  # %10 artış tahmini
+    
+    return jsonify({
+        "current_week": recent_count,
+        "daily_average": round(daily_avg, 1),
+        "next_week_prediction": next_week_prediction,
+        "trend": "increasing" if daily_avg > 1 else "stable",
+        "confidence": 0.75
+    })
 
 if __name__ == '__main__':
     app.run(debug=True)

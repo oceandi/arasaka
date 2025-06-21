@@ -1,0 +1,36 @@
+{
+  "generated_at": "2025-06-20T13:07:00.348205",
+  "summary": {
+    "total_records": 3,
+    "hags_violation_rate": 33.33333333333333,
+    "solution_rate": 66.66666666666666,
+    "coordinate_coverage": 100.0
+  },
+  "alerts": [
+    {
+      "type": "warning",
+      "message": "HAGS aşım oranı %33.3 - Kritik seviyede!",
+      "priority": "high"
+    },
+    {
+      "type": "info",
+      "message": "Çözüm oranı %66.7 - İyileştirme gerekli",
+      "priority": "medium"
+    }
+  ],
+  "recommendations": [
+    {
+      "title": "Koordinat Verisi Tamamlama",
+      "description": "Koordinatsız arızaların lokasyon bilgileri tamamlanmalı",
+      "impact": "high",
+      "effort": "low"
+    },
+    {
+      "title": "HAGS Süre Optimizasyonu",
+      "description": "Yüksek HAGS aşım oranı için süreç iyileştirmesi",
+      "impact": "high",
+      "effort": "medium"
+    }
+  ],
+  "predictions": []
+}

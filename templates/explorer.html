@@ -762,6 +762,149 @@
         .dropdown:hover .dropdown-content {
             display: block;
         }
+
+        /* AI Widget Styles */
+        .ai-widget {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .ai-widget h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ai-widget h3 i {
+            color: var(--accent-color);
+        }
+
+        .ai-insights {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .ai-insight-card {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .ai-insight-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .ai-insight-card .label {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        .ai-chat {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .ai-chat-messages {
+            margin-bottom: 10px;
+        }
+
+        .ai-message {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+
+        .ai-message.user {
+            background-color: var(--secondary-color);
+            margin-left: 20%;
+            text-align: right;
+        }
+
+        .ai-message.assistant {
+            background-color: rgba(59, 130, 246, 0.2);
+            margin-right: 20%;
+        }
+
+        .ai-chat-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .ai-chat-input input {
+            flex: 1;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background-color: var(--content-bg);
+            color: var(--text-color);
+        }
+
+        .ai-chat-input button {
+            padding: 8px 15px;
+            border-radius: 4px;
+            border: none;
+            background-color: var(--accent-color);
+            color: white;
+            cursor: pointer;
+        }
+
+        .ai-predictions {
+            margin-top: 15px;
+        }
+
+        .prediction-item {
+            background-color: rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .prediction-item i {
+            font-size: 20px;
+        }
+
+        .prediction-item.warning i {
+            color: var(--warning-color);
+        }
+
+        .prediction-item.danger i {
+            color: var(--danger-color);
+        }
+
+        .ai-loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .ai-loading i {
+            font-size: 30px;
+            color: var(--accent-color);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -863,6 +1006,56 @@
                     <button onclick="filterMap('unsolved')"><i class="fas fa-times"></i> Çözülmeyenler</button>
                 </div>
                 <div id="map"></div>
+            </div>
+
+            <!-- AI Widget HTML (dashboard içine eklenecek) -->
+            <div class="ai-widget">
+                <h3><i class="fas fa-robot"></i> AI Asistan</h3>
+                
+                <!-- AI İçgörüleri -->
+                <div class="ai-insights" id="aiInsights">
+                    <div class="ai-insight-card">
+                        <div class="value" id="aiPrediction">-</div>
+                        <div class="label">Gelecek Hafta Tahmini</div>
+                    </div>
+                    <div class="ai-insight-card">
+                        <div class="value" id="aiDailyAvg">-</div>
+                        <div class="label">Günlük Ortalama</div>
+                    </div>
+                    <div class="ai-insight-card">
+                        <div class="value" id="aiTrend">-</div>
+                        <div class="label">Trend</div>
+                    </div>
+                </div>
+                
+                <!-- AI Tahminleri -->
+                <div class="ai-predictions" id="aiPredictions">
+                    <!-- Dinamik olarak doldurulacak -->
+                </div>
+                
+                <!-- AI Chat -->
+                <div class="ai-chat">
+                    <div class="ai-chat-messages" id="aiChatMessages">
+                        <div class="ai-message assistant">
+                            Merhaba! Fiber arıza analizi konusunda size nasıl yardımcı olabilirim?
+                        </div>
+                    </div>
+                    <div class="ai-chat-input">
+                        <input type="text" id="aiChatInput" placeholder="Sorunuzu yazın..." 
+                            onkeypress="if(event.key === 'Enter') sendAIMessage()">
+                        <button onclick="sendAIMessage()"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+                
+                <!-- Rapor Butonları -->
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <button class="btn btn-primary" onclick="generateAIReport('weekly')">
+                        <i class="fas fa-file-alt"></i> Haftalık Rapor
+                    </button>
+                    <button class="btn btn-primary" onclick="generateAIReport('risk')">
+                        <i class="fas fa-exclamation-triangle"></i> Risk Raporu
+                    </button>
+                </div>
             </div>
             
             <div class="charts-container">
@@ -1690,6 +1883,188 @@
         
         // Auto refresh every 5 minutes
         setInterval(fetchData, 300000);
+
+        let aiChatHistory = [];
+
+        // AI widget verilerini yükle
+        async function loadAIWidget() {
+            try {
+                const response = await fetch('/api/ai/widget');
+                const data = await response.json();
+                
+                document.getElementById('aiPrediction').textContent = data.next_week_prediction;
+                document.getElementById('aiDailyAvg').textContent = data.daily_average;
+                document.getElementById('aiTrend').textContent = 
+                    data.trend === 'increasing' ? '📈 Artış' : '📊 Stabil';
+                
+                // AI içgörüleri yükle
+                loadAIInsights();
+            } catch (error) {
+                console.error('AI widget yükleme hatası:', error);
+            }
+        }
+
+        // AI içgörüleri
+        async function loadAIInsights() {
+            try {
+                const response = await fetch('/api/ai/insights');
+                const data = await response.json();
+                
+                const predictionsDiv = document.getElementById('aiPredictions');
+                predictionsDiv.innerHTML = '';
+                
+                data.predictions.forEach(prediction => {
+                    const item = document.createElement('div');
+                    item.className = `prediction-item ${prediction.type === 'hags_alert' ? 'warning' : 'danger'}`;
+                    item.innerHTML = `
+                        <i class="fas ${prediction.type === 'hags_alert' ? 'fa-clock' : 'fa-exclamation-circle'}"></i>
+                        <div>
+                            <strong>${prediction.message}</strong>
+                            ${prediction.recommendation ? `<br><small>${prediction.recommendation}</small>` : ''}
+                            ${prediction.areas ? `<br><small>Bölgeler: ${prediction.areas.join(', ')}</small>` : ''}
+                        </div>
+                    `;
+                    predictionsDiv.appendChild(item);
+                });
+            } catch (error) {
+                console.error('AI insights yükleme hatası:', error);
+            }
+        }
+
+        // AI Chat
+        async function sendAIMessage() {
+            const input = document.getElementById('aiChatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Kullanıcı mesajını ekle
+            addChatMessage(message, 'user');
+            input.value = '';
+            
+            // Loading göster
+            const loadingId = addChatMessage('<i class="fas fa-spinner fa-spin"></i> Düşünüyorum...', 'assistant');
+            
+            try {
+                const response = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        message: message,
+                        history: aiChatHistory 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Loading'i kaldır
+                document.getElementById(loadingId).remove();
+                
+                if (data.success) {
+                    addChatMessage(data.message, 'assistant');
+                } else {
+                    addChatMessage('Üzgünüm, bir hata oluştu. Lütfen tekrar deneyin.', 'assistant');
+                }
+            } catch (error) {
+                document.getElementById(loadingId).remove();
+                addChatMessage('AI servisi şu anda kullanılamıyor.', 'assistant');
+            }
+        }
+
+        function addChatMessage(message, sender) {
+            const messagesDiv = document.getElementById('aiChatMessages');
+            const messageDiv = document.createElement('div');
+            const messageId = `msg-${Date.now()}`;
+            messageDiv.id = messageId;
+            messageDiv.className = `ai-message ${sender}`;
+            messageDiv.innerHTML = message;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            // Geçmişe ekle
+            if (!message.includes('fa-spinner')) {
+                aiChatHistory.push({ role: sender, content: message });
+            }
+            
+            return messageId;
+        }
+
+        // AI Rapor üretimi
+        async function generateAIReport(reportType) {
+            if (!confirm(`${reportType === 'weekly' ? 'Haftalık' : 'Risk'} raporu oluşturulacak. Devam etmek istiyor musunuz?`)) {
+                return;
+            }
+            
+            showMessage('Rapor hazırlanıyor...', 'info');
+            
+            try {
+                const response = await fetch(`/api/ai/report/${reportType}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Raporu modal'da göster
+                    showAIReportModal(data.report, data.filename);
+                    showMessage('Rapor hazır!', 'success');
+                } else {
+                    showMessage('Rapor oluşturulamadı.', 'error');
+                }
+            } catch (error) {
+                showMessage('Rapor servisi hatası!', 'error');
+            }
+        }
+
+        function showAIReportModal(report, filename) {
+            // Modal oluştur
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'block';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 800px;">
+                    <div class="modal-header">
+                        <h2>AI Raporu</h2>
+                        <span class="close" onclick="this.parentElement.parentElement.parentElement.remove()">&times;</span>
+                    </div>
+                    <div style="padding: 20px;">
+                        <pre style="white-space: pre-wrap; font-family: inherit;">${report}</pre>
+                        <div style="margin-top: 20px; text-align: right;">
+                            <button class="btn btn-primary" onclick="downloadReport('${filename}')">
+                                <i class="fas fa-download"></i> İndir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function downloadReport(filename) {
+            window.open(`/download/${filename}?path=`, '_blank');
+        }
+
+        // Sayfa yüklendiğinde AI widget'ı başlat
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAIWidget();
+            
+            // Her 5 dakikada bir güncelle
+            setInterval(loadAIWidget, 300000);
+        });
+
+        // AI Analiz butonu (mevcut verileri analiz etmek için)
+        function analyzeWithAI() {
+            const prompt = "Mevcut fiber arıza verilerini analiz ederek kritik bulguları ve önerileri listele.";
+            
+            fetch('/api/ai/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    addChatMessage(data.response, 'assistant');
+                }
+            });
+        }
     </script>
 </body>
 </html>

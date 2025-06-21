@@ -1,0 +1,39 @@
+
+# Fiber Optik Arıza Veritabanı Analizi
+
+## Veritabanı Özeti:
+- Toplam tablo sayısı: 6
+- Veritabanı boyutu: 0.04 MB
+
+## Fiber Arıza Tablosu Detayları:
+
+- Toplam arıza kaydı: 3
+- Sütun sayısı: 24
+
+### HAGS Analizi:
+- HAGS aşan arıza sayısı: 1 (33.3%)
+
+### Çözüm Durumu:
+- Çözülen arızalar: 2 (66.7%)
+- Çözülmeyen arızalar: 1
+
+### Koordinat Kapsama:
+- Koordinatlı arızalar: 3 (100.0%)
+
+### Arıza Süre İstatistikleri:
+- Ortalama arıza süresi: 4.0 saat
+- En uzun arıza: 6.3 saat
+- En kısa arıza: 1.8 saat
+
+### En Sık Arıza Nedenleri:
+- TC Karayolları Çalışması: 2 kez
+- Doğalgaz Firması Çalışması: 1 kez
+
+## Analiz Soruları:
+1. Bu verilere göre en kritik arıza bölgeleri hangileri?
+2. HAGS aşım oranını azaltmak için hangi önlemler alınabilir?
+3. Çözülmeyen arızaların ortak özellikleri neler?
+4. Arıza sürelerini kısaltmak için ne önerirsiniz?
+5. Gelecekteki potansiyel arıza bölgeleri tahmin edilebilir mi?
+
+Lütfen bu verileri analiz ederek Türkiye fiber altyapısı için öneriler sunun.

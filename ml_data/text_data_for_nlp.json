@@ -1,0 +1,23 @@
+[
+  {
+    "bulten_no": "10099810779",
+    "description": "CANAKKALE MERKEZ - CANAKKALE EZINE Şehirler arası ",
+    "root_cause": "Doğalgaz Firması Çalışması",
+    "consolidated_cause": "Özel Kurum Çalışması",
+    "is_solved": true
+  },
+  {
+    "bulten_no": "10105742802",
+    "description": "BURSA KARACABEY - BALIKESIR KARESI  ",
+    "root_cause": "TC Karayolları Çalışması",
+    "consolidated_cause": "Resmi Kurum Kazı Çalışması",
+    "is_solved": false
+  },
+  {
+    "bulten_no": "10105742803",
+    "description": "EDIRNE PISALA - SINIR KAPISI  ",
+    "root_cause": "TC Karayolları Çalışması",
+    "consolidated_cause": "Resmi Kurum Kazı Çalışması",
+    "is_solved": true
+  }
+]
