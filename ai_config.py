@@ -4,10 +4,10 @@ KAREL Network Dashboard - AI Konfigürasyon
 
 # AI Model Ayarları
 AI_CONFIG = {
-    "model": "deepseek-r1:7b",  # Varsayılan model
+    "model": "qwen2.5:3b",  # Varsayılan model
     "ollama_url": "http://localhost:11434",
     "temperature": 0.7,
-    "timeout": 30,
+    "timeout": 60,
     "max_tokens": 2000
 }
 

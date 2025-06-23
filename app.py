@@ -33,6 +33,8 @@ ai = FiberArizaAI()
 insights = ai.generate_dashboard_insights()
 OLLAMA_URL = "http://localhost:11434"
 AI_MODEL = "qwen2.5:3b"
+rag = None
+
 
 # Uygulamanın bulunduğu dizinde 'files' klasörü oluştur
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'files')
@@ -121,6 +123,18 @@ class KritikModernizasyon(db.Model):
     durumu = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+def get_rag():
+    """RAG'i lazy load et"""
+    global rag
+    if rag is None:
+        try:
+            from rag_setup import FiberArizaRAG
+            rag = FiberArizaRAG()
+        except Exception as e:
+            print(f"RAG yüklenemedi: {e}")
+            rag = None
+    return rag    
 
 @app.route('/')
 def home():
@@ -1471,32 +1485,64 @@ def ai_insights():
 
 @app.route('/api/ai/chat', methods=['POST'])
 def ai_chat():
-    """Sohbet benzeri AI etkileşimi"""
+    """RAG destekli AI chat"""
     data = request.get_json()
     message = data.get('message', '')
     
-    # Gerçek veritabanı istatistikleri
+    # RAG context'i al
+    context = ""
+    try:
+        from rag_setup import FiberArizaRAG
+        rag = FiberArizaRAG()
+        context = rag.get_context_for_llm(message)
+    except Exception as e:
+        print(f"RAG hatası: {e}")
+        context = ""
+    
+    # Veritabanı istatistikleri
     total_ariza = FiberAriza.query.count()
     hags_asan = FiberAriza.query.filter_by(hags_asildi_mi='Evet').count()
     cozulen = FiberAriza.query.filter_by(kalici_cozum='Evet').count()
     
-    # Daha iyi sistem prompt
-    full_prompt = f"""You are a fiber optic fault tracking system assistant. 
-    Current database statistics:
-    - Total faults: {total_ariza}
-    - HAGS exceeded: {hags_asan}
-    - Solved: {cozulen}
+    # Bölge istatistikleri ekle
+    from sqlalchemy import func
+    bolge_stats = db.session.query(
+        FiberAriza.bolge,
+        func.count(FiberAriza.id).label('count')
+    ).group_by(FiberAriza.bolge).all()
     
-    Important terms:
-    - HAGS: Service guarantee time (maximum time to resolve fault)
-    - FTTB: Fiber to the Building
-    - DDO: Digital Distribution Office
+    bolge_info = "\nBölgesel Dağılım:\n"
+    for bolge, count in bolge_stats[:5]:  # İlk 5 bölge
+        bolge_info += f"- {bolge}: {count} arıza\n"
     
-    User question in Turkish: {message}
+    full_prompt = f"""Sen bir fiber optik arıza takip sistemi asistanısın.
     
-    Please respond in Turkish language and provide helpful information about the fiber fault system.
+    GERÇEK VERİTABANI İSTATİSTİKLERİ:
+    - Toplam arıza sayısı: {total_ariza}
+    - HAGS süresini aşan arıza sayısı: {hags_asan}
+    - Çözülen arıza sayısı: {cozulen}
+    - Çözülmeyen arıza sayısı: {total_ariza - cozulen}
     
-    Assistant:"""
+    {bolge_info}
+    
+    RAG ARAMA SONUÇLARI:
+    {context}
+    
+    FIBER TERMİNOLOJİSİ:
+    - HAGS: Hizmet Alım Garanti Süresi (arızanın çözülmesi için maksimum süre)
+    - FTTB: Fiber to the Building (Binaya kadar fiber)
+    - DDO: Dijital Dağıtım Ofisi
+    - OTDR: Optical Time Domain Reflectometer
+    - Deplase: Kablo güzergahının değiştirilmesi
+    
+    Kullanıcı sorusu: {message}
+    
+    KURALLLAR:
+    1. SADECE yukarıda verilen gerçek verileri kullan
+    2. Kesinlikle uydurma sayı veya istatistik kullanma
+    3. Eğer spesifik bir veri yoksa "Bu konuda veritabanında bilgi bulunamadı" de
+    4. Türkçe olarak net ve anlaşılır cevap ver
+    """
     
     try:
         response = requests.post(
@@ -1505,15 +1551,13 @@ def ai_chat():
                 "model": AI_MODEL,
                 "prompt": full_prompt,
                 "stream": False,
-                "temperature": 0.7
+                "temperature": 0.2  # Daha deterministik cevaplar
             },
             timeout=60
         )
         
         if response.status_code == 200:
-            response_json = response.json()
-            ai_response = response_json.get("response", "")
-            
+            ai_response = response.json().get("response", "")
             return jsonify({
                 "success": True,
                 "message": ai_response
@@ -1524,9 +1568,11 @@ def ai_chat():
                 "message": f"Model hatası: {response.status_code}"
             }), 500
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({
             "success": False,
-            "message": f"Bağlantı hatası: {str(e)}"
+            "message": f"Hata: {str(e)}"
         }), 500
 
 @app.route('/api/ai/report/<string:report_type>')
