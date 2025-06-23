@@ -32,7 +32,7 @@ migrate = Migrate(app, db)
 ai = FiberArizaAI()
 insights = ai.generate_dashboard_insights()
 OLLAMA_URL = "http://localhost:11434"
-AI_MODEL = "deepseek-r1:7b"
+AI_MODEL = "qwen2.5:3b"
 
 # Uygulamanın bulunduğu dizinde 'files' klasörü oluştur
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'files')
@@ -1475,26 +1475,28 @@ def ai_chat():
     data = request.get_json()
     message = data.get('message', '')
     
-    # Mesaj geçmişi (opsiyonel - session'da tutulabilir)
-    history = data.get('history', [])
+    # Gerçek veritabanı istatistikleri
+    total_ariza = FiberAriza.query.count()
+    hags_asan = FiberAriza.query.filter_by(hags_asildi_mi='Evet').count()
+    cozulen = FiberAriza.query.filter_by(kalici_cozum='Evet').count()
     
-    # Son arızalar
-    recent_failures = FiberAriza.query.order_by(
-        FiberAriza.ariza_baslangic.desc()
-    ).limit(5).all()
+    # Daha iyi sistem prompt
+    full_prompt = f"""You are a fiber optic fault tracking system assistant. 
+    Current database statistics:
+    - Total faults: {total_ariza}
+    - HAGS exceeded: {hags_asan}
+    - Solved: {cozulen}
     
-    context = "Son 5 arıza:\n"
-    for ariza in recent_failures:
-        context += f"- {ariza.bolge} / {ariza.il}: {ariza.ariza_kok_neden}\n"
+    Important terms:
+    - HAGS: Service guarantee time (maximum time to resolve fault)
+    - FTTB: Fiber to the Building
+    - DDO: Digital Distribution Office
     
-    full_prompt = f"""
-    Sen bir fiber optik arıza uzmanısın. 
+    User question in Turkish: {message}
     
-    {context}
+    Please respond in Turkish language and provide helpful information about the fiber fault system.
     
-    Kullanıcı: {message}
-    Asistan:
-    """
+    Assistant:"""
     
     try:
         response = requests.post(
@@ -1505,19 +1507,26 @@ def ai_chat():
                 "stream": False,
                 "temperature": 0.7
             },
-            timeout=30
+            timeout=60
         )
         
         if response.status_code == 200:
-            ai_response = response.json().get("response", "")
+            response_json = response.json()
+            ai_response = response_json.get("response", "")
+            
             return jsonify({
                 "success": True,
                 "message": ai_response
             })
+        else:
+            return jsonify({
+                "success": False,
+                "message": f"Model hatası: {response.status_code}"
+            }), 500
     except Exception as e:
         return jsonify({
             "success": False,
-            "message": "AI şu anda kullanılamıyor. Lütfen daha sonra tekrar deneyin."
+            "message": f"Bağlantı hatası: {str(e)}"
         }), 500
 
 @app.route('/api/ai/report/<string:report_type>')

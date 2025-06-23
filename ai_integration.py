@@ -165,9 +165,39 @@ Veritabanındaki {self._get_total_records()} kayıt üzerinden yapılan analizde
         pass
     
     def _call_local_model(self, prompt: str) -> str:
-        """Yerel model çağrısı (Ollama, vb.)"""
-        # TODO: Ollama veya benzeri local model entegrasyonu
-        pass
+        """Yerel model çağrısı (Ollama)"""
+        import requests
+        
+        # Fiber terminoloji context'i ekle
+        context = """
+        Fiber Optik Terminoloji:
+        - HAGS (Hizmet Alım Garanti Süresi): Arızanın çözülmesi için garanti edilen maksimum süre
+        - FTTB: Fiber to the Building - Binaya kadar fiber
+        - DDO: Dijital Dağıtım Ofisi
+        - OTDR: Optical Time Domain Reflectometer - Fiber kablo test cihazı
+        - Deplase: Kablo güzergahının değiştirilmesi
+        - Refakat: Arıza gideriminde ekip desteği
+        """
+        
+        full_prompt = f"{context}\n\n{prompt}"
+        
+        try:
+            response = requests.post(
+                "http://localhost:11434/api/generate",
+                json={
+                    "model": "deepseek-r1:7b",
+                    "prompt": full_prompt,
+                    "stream": False
+                },
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                return response.json().get("response", "Yanıt alınamadı")
+            else:
+                return f"Model hatası: {response.status_code}"
+        except Exception as e:
+            return f"Bağlantı hatası: {str(e)}. Ollama servisinin çalıştığından emin olun."
     
     def _get_total_records(self) -> int:
         """Toplam kayıt sayısını al"""
