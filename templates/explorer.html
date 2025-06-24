@@ -918,6 +918,7 @@
                 <ul>
                     <li><a href="/browse" class="active"><i class="fas fa-chart-line"></i> Fiber Arızalar</a></li>
                     <li><a href="#" onclick="showMapView()"><i class="fas fa-map-marked-alt"></i> Harita Görünümü</a></li>
+                    <li><a href="#" onclick="toggleAIWidget()"><i class="fas fa-robot"></i> AI Asistan</a></li>
                     <li><a href="/deplase_islah"><i class="fas fa-tools"></i> Deplase Islah Kablo Upgrade</a></li>
                     <li><a href="/hasar_tazmin"><i class="fas fa-money-check-alt"></i> Hasar Tazmin</a></li>
                     <li><a href="/fttb_optimizasyon"><i class="fas fa-building"></i> FTTB Optimizasyon</a></li>
@@ -1009,7 +1010,7 @@
             </div>
 
             <!-- AI Widget HTML (dashboard içine eklenecek) -->
-            <div class="ai-widget">
+            <div class="ai-widget" id="aiWidget" style="display: none;">
                 <h3><i class="fas fa-robot"></i> AI Asistan</h3>
                 
                 <!-- AI İçgörüleri -->
@@ -2064,6 +2065,17 @@
                     addChatMessage(data.response, 'assistant');
                 }
             });
+        }
+        
+        // AI Widget göster/gizle
+        function toggleAIWidget() {
+            const aiWidget = document.getElementById('aiWidget');
+            if (aiWidget.style.display === 'none') {
+                aiWidget.style.display = 'block';
+                loadAIWidget(); // AI verilerini yükle
+            } else {
+                aiWidget.style.display = 'none';
+            }
         }
     </script>
 </body>
