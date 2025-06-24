@@ -67,6 +67,12 @@ class FiberAriza(db.Model):
     kullanilan_malzeme = db.Column(db.String(200))
     aciklama = db.Column(db.Text)
     serivs_etkisi = db.Column(db.String(50))  # H sütunu için yeni alan
+    refakat_saglandi_mi = db.Column(db.String(10))
+    deplase_islah_ihtiyaci = db.Column(db.String(10))
+    hasar_tazmin_sureci = db.Column(db.String(10))
+    otdr_olcum_bilgileri = db.Column(db.Text)
+    etkilenen_servis_bilgileri = db.Column(db.Text)  # H sütunu için doğru alan
+    yil = db.Column(db.String(10))  # Yıl alanı
 
 class DeplaseIslah(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -400,37 +406,50 @@ def api_arizalar():
 @app.route('/api/ariza', methods=['POST'])
 def api_add_ariza():
     data = request.get_json()
-    if FiberAriza.query.filter_by(bulten_no=data.get('bultenNo')).first():
-        return jsonify({'error': 'Bu Bülten Numarası ile zaten kayıt var!'}), 400
-
-    ariza = FiberAriza(
-        hafta=data.get('hafta'),
-        bolge=data.get('bolge'),
-        bulten_no=data.get('bultenNo'),
-        il=data.get('il'),
-        guzergah=data.get('guzergah'),
-        kordinat_a=data.get('kordinatA'),
-        kordinat_b=data.get('kordinatB'),
-        ariza_baslangic=datetime.fromisoformat(data.get('baslangicTarihi')) if data.get('baslangicTarihi') else None,
-        ariza_bitis=datetime.fromisoformat(data.get('bitisTarihi')) if data.get('bitisTarihi') else None,
-        kablo_tipi=data.get('kabloTipi'),
-        ariza_kok_neden=data.get('kokNeden'),
-        hags_asildi_mi=data.get('hags'),
-        servis_etkisi=data.get('servisEtkisi'),
-        ariza_suresi=data.get('arizaSuresi'),
-        kalici_cozum=data.get('kaliciCozum'),
-        ariza_konsolide=data.get('arizaKonsolide'),
-        lokasyon=data.get('lokasyon'),
-        refakat_durumu=data.get('refakatDurumu'),
-        hags_suresi=data.get('hagsSuresi'),
-        kesinti_suresi=data.get('kesintiSuresi'),
-        kullanilan_malzeme=data.get('kullanilanMalzeme'),
-        aciklama=data.get('aciklama'),
-        serivs_etkisi=data.get('serivsEtkisi')
-    )
-    db.session.add(ariza)
-    db.session.commit()
-    return jsonify({'status': 'ok'}), 201
+    
+    # Field mapping düzeltmesi
+    try:
+        ariza = FiberAriza(
+            hafta=data.get('hafta'),
+            bolge=data.get('bolge'),
+            bulten_no=data.get('bultenNo'),
+            il=data.get('il'),
+            guzergah=data.get('guzergah'),
+            lokasyon=data.get('lokasyon'),
+            ariza_baslangic=datetime.fromisoformat(data.get('baslangicTarihi')) if data.get('baslangicTarihi') else None,
+            ariza_bitis=datetime.fromisoformat(data.get('bitisTarihi')) if data.get('bitisTarihi') else None,
+            ariza_konsolide=data.get('arizaKonsolide'),
+            ariza_kok_neden=data.get('kokNeden'),
+            hags_asildi_mi=data.get('hags'),
+            refakat_durumu=data.get('refakatDurumu'),
+            servis_etkisi=data.get('servisEtkisi'),
+            ariza_suresi=data.get('arizaSuresi'),
+            # Son 14 alan
+            kordinat_a=data.get('kordinatA', ''),
+            kordinat_b=data.get('kordinatB', ''),
+            serivs_etkisi=data.get('etkilenenServisBilgileri', ''),  # H sütunu
+            kablo_tipi=data.get('kabloTipi', ''),
+            hags_suresi=data.get('hagsSuresi', ''),
+            kesinti_suresi=data.get('kesintiSuresi', ''),
+            kalici_cozum=data.get('kaliciCozum', ''),
+            kullanilan_malzeme=data.get('kullanilanMalzeme', ''),
+            aciklama=data.get('aciklama', ''),
+            # Eksik alanlar
+            refakat_saglandi_mi=data.get('refakatSaglandiMi', ''),
+            deplase_islah_ihtiyaci=data.get('deplaseIslahIhtiyaci', ''),
+            hasar_tazmin_sureci=data.get('hasarTazminSureci', ''),
+            otdr_olcum_bilgileri=data.get('otdrOlcumBilgileri', '')
+        )
+        
+        db.session.add(ariza)
+        db.session.commit()
+        
+        return jsonify({'status': 'ok', 'id': ariza.id}), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Arıza ekleme hatası: {str(e)}")
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/api/ariza/<int:id>', methods=['PUT'])
 def api_update_ariza(id):
