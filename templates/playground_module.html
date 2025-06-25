@@ -1708,6 +1708,62 @@
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
+// Excel serial date'i JavaScript date'e çeviren fonksiyon
+function excelSerialToDate(serial) {
+    if (typeof serial !== 'number' || serial < 1 || serial > 100000) {
+        return null;
+    }
+    
+    // Excel'in başlangıç tarihi (1900-01-01, ama Excel'de bug var)
+    const excelEpoch = new Date(1899, 11, 30);
+    const jsDate = new Date(excelEpoch.getTime() + serial * 24 * 60 * 60 * 1000);
+    
+    return jsDate;
+}
+
+// Değerin Excel serial date olup olmadığını kontrol eden fonksiyon
+function isExcelSerialDate(value) {
+    return typeof value === 'number' && value > 40000 && value < 50000;
+}
+
+// Tarih formatını düzeltme fonksiyonu
+function formatDateValue(value, fieldType = 'text') {
+    // Excel serial date kontrolü
+    if (isExcelSerialDate(value)) {
+        const jsDate = excelSerialToDate(value);
+        if (jsDate) {
+            if (fieldType === 'date') {
+                return jsDate.toLocaleDateString('tr-TR');
+            } else if (fieldType === 'datetime') {
+                return jsDate.toLocaleString('tr-TR');
+            } else {
+                return jsDate.toLocaleDateString('tr-TR');
+            }
+        }
+    }
+    
+    // ISO tarih string'i kontrolü
+    if (typeof value === 'string' && value.includes('T')) {
+        try {
+            const date = new Date(value);
+            if (!isNaN(date.getTime())) {
+                if (fieldType === 'date') {
+                    return date.toLocaleDateString('tr-TR');
+                } else if (fieldType === 'datetime') {
+                    return date.toLocaleString('tr-TR');
+                } else {
+                    return date.toLocaleDateString('tr-TR');
+                }
+            }
+        } catch (e) {
+            // Parse edilemezse
+        }
+    }
+    
+    return value;
+}
+
+
 const moduleEl = document.getElementById('module');
 const moduleName = moduleEl.getAttribute('data-name');
 const moduleFields = JSON.parse(moduleEl.getAttribute('data-fields') || '[]');
@@ -1730,11 +1786,30 @@ function renderTable() {
     const tbody = document.getElementById('tableBody');
     tbody.innerHTML = '';
     
+    if (currentData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="${3 + moduleFields.length}" style="text-align: center; padding: 20px;">
+                    <i class="fas fa-search" style="font-size: 48px; opacity: 0.3; margin-bottom: 10px;"></i>
+                    <p>Kayıt bulunamadı</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
     currentData.forEach(record => {
         const row = document.createElement('tr');
+        
+        // Field'ları render et
+        const fieldCells = moduleFields.map(field => {
+            const value = formatDateValue(record[field.name] || '', field.type);
+            return `<td>${value}</td>`;
+        }).join('');
+        
         row.innerHTML = `
             <td>${record.id}</td>
-            ${moduleFields.map(field => `<td>${record[field.name] || ''}</td>`).join('')}
+            ${fieldCells}
             <td>${new Date(record.created_at).toLocaleString('tr-TR')}</td>
             <td class="action-cell">
                 <button onclick="editRecord(${record.id})" class="edit">
@@ -1904,17 +1979,56 @@ function handleImportFile(file) {
     reader.onload = function(e) {
         try {
             const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
+            const workbook = XLSX.read(data, { 
+                type: 'array',
+                cellDates: true,  // Excel tarihlerini düzgün parse et
+                dateNF: 'dd/mm/yyyy' // Tarih formatı
+            });
             const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+            
+            // JSON'a çevirirken tarih kontrolü yap
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet, {
+                raw: false, // Ham verileri değil, formatlanmış verileri al
+                dateNF: 'dd/mm/yyyy'
+            });
             
             if (jsonData.length === 0) {
                 alert('Excel dosyası boş!');
                 return;
             }
             
+            // Tarihleri düzelt
+            const processedData = jsonData.map(row => {
+                const processedRow = {};
+                
+                Object.keys(row).forEach(key => {
+                    let value = row[key];
+                    
+                    // Excel serial date kontrolü (45819.38657407407 gibi)
+                    if (typeof value === 'number' && value > 40000 && value < 50000) {
+                        // Excel serial date'i JavaScript date'e çevir
+                        const excelEpoch = new Date(1899, 11, 30); // Excel'in başlangıç tarihi
+                        const jsDate = new Date(excelEpoch.getTime() + value * 24 * 60 * 60 * 1000);
+                        
+                        // Field tipine göre format
+                        const fieldInfo = moduleFields.find(f => f.name === key);
+                        if (fieldInfo?.type === 'date') {
+                            value = jsDate.toISOString().split('T')[0]; // YYYY-MM-DD
+                        } else if (fieldInfo?.type === 'datetime') {
+                            value = jsDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+                        } else {
+                            value = jsDate.toLocaleDateString('tr-TR'); // DD.MM.YYYY
+                        }
+                    }
+                    
+                    processedRow[key] = value;
+                });
+                
+                return processedRow;
+            });
+            
             // Önizleme göster
-            showImportPreview(jsonData);
+            showImportPreview(processedData);
             
         } catch (error) {
             alert('Excel dosyası okunamadı: ' + error.message);
@@ -2335,20 +2449,15 @@ function showFilterDropdown(headerElement, field) {
     
     closeAllDropdowns();
     
-    // Unique değerleri topla
+    // Unique değerleri topla ve tarihleri düzelt
     const uniqueValues = [...new Set(allData.map(record => {
         if (field === 'id') return String(record.id);
         if (field === 'created_at') return new Date(record.created_at).toLocaleDateString('tr-TR');
-        return String(record[field] || '');
+        
+        const fieldInfo = moduleFields.find(f => f.name === field);
+        const value = formatDateValue(record[field], fieldInfo?.type);
+        return String(value || '');
     }))].filter(v => v !== 'null' && v !== 'undefined' && v !== '').sort();
-
-    if (window.innerWidth <= 768) {
-        const backdrop = document.createElement('div');
-        backdrop.className = 'filter-backdrop';
-        backdrop.addEventListener('click', closeAllDropdowns);
-        document.body.appendChild(backdrop);
-        backdrop.style.display = 'block';
-    }
     
     // Dropdown oluştur
     const dropdown = document.createElement('div');
