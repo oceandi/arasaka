@@ -1252,6 +1252,34 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
+
+        .filter-row {
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        .filter-row th {
+            padding: 5px;
+        }
+
+        .column-filter {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid var(--border-color);
+            background-color: var(--content-bg);
+            color: var(--text-color);
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .column-filter:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        /* Filtre aktifken satır vurgulama */
+        .filtered-out {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -1298,6 +1326,30 @@
                             {% endfor %}
                             <th>Oluşturulma</th>
                             <th>İşlemler</th>
+                        </tr>
+                        <!-- Filtre satırı -->
+                        <tr class="filter-row">
+                            <th><input type="text" class="column-filter" data-field="id" placeholder="ID ara..."></th>
+                            {% for field in module.fields %}
+                            <th>
+                                {% if field.type == 'select' and field.options %}
+                                <select class="column-filter" data-field="{{ field.name }}">
+                                    <option value="">Tümü</option>
+                                    {% for option in field.options %}
+                                    <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% else %}
+                                <input type="text" class="column-filter" data-field="{{ field.name }}" placeholder="Ara...">
+                                {% endif %}
+                            </th>
+                            {% endfor %}
+                            <th><input type="text" class="column-filter" data-field="created_at" placeholder="Tarih ara..."></th>
+                            <th>
+                                <button class="btn btn-sm" onclick="clearFilters()" title="Filtreleri Temizle">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -1776,6 +1828,181 @@ function downloadTemplate() {
     
     // İndir
     XLSX.writeFile(wb, `${moduleName}_template.xlsx`);
+}
+
+let allData = []; // Tüm veriyi sakla
+let filteredDataIds = new Set(); // Filtrelenmiş ID'ler
+
+// loadData fonksiyonunu güncelleyin
+async function loadData() {
+    const response = await fetch(`/api/playground/${moduleName}/data`);
+    currentData = await response.json();
+    allData = [...currentData]; // Tüm veriyi sakla
+    renderTable();
+    setupFilters(); // Filtreleri kur
+}
+
+// Filtreleri kur
+function setupFilters() {
+    const filterInputs = document.querySelectorAll('.column-filter');
+    
+    filterInputs.forEach(input => {
+        // Debounce için timeout
+        let timeoutId;
+        
+        input.addEventListener('input', function() {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                applyFilters();
+            }, 300); // 300ms bekle
+        });
+        
+        input.addEventListener('change', function() {
+            applyFilters();
+        });
+    });
+}
+
+// Filtreleri uygula
+function applyFilters() {
+    const filters = {};
+    
+    // Tüm filtre değerlerini topla
+    document.querySelectorAll('.column-filter').forEach(filter => {
+        const field = filter.getAttribute('data-field');
+        const value = filter.value.trim().toLowerCase();
+        if (value) {
+            filters[field] = value;
+        }
+    });
+    
+    // Verileri filtrele
+    currentData = allData.filter(record => {
+        for (const [field, filterValue] of Object.entries(filters)) {
+            let recordValue = '';
+            
+            if (field === 'id') {
+                recordValue = String(record.id);
+            } else if (field === 'created_at') {
+                recordValue = new Date(record.created_at).toLocaleString('tr-TR');
+            } else {
+                recordValue = String(record[field] || '');
+            }
+            
+            recordValue = recordValue.toLowerCase();
+            
+            // Eşleşme kontrolü
+            if (!recordValue.includes(filterValue)) {
+                return false;
+            }
+        }
+        return true;
+    });
+    
+    // Tabloyu yeniden çiz
+    renderTable();
+    
+    // Filtre durumunu göster
+    updateFilterStatus();
+}
+
+// Filtreleri temizle
+function clearFilters() {
+    document.querySelectorAll('.column-filter').forEach(filter => {
+        filter.value = '';
+    });
+    currentData = [...allData];
+    renderTable();
+    updateFilterStatus();
+}
+
+// Filtre durumunu göster
+function updateFilterStatus() {
+    const activeFilters = document.querySelectorAll('.column-filter').length;
+    const appliedFilters = Array.from(document.querySelectorAll('.column-filter')).filter(f => f.value).length;
+    
+    // Başlığa filtre durumu ekle
+    const tableHeader = document.querySelector('.data-table h3');
+    const existingBadge = tableHeader.querySelector('.filter-badge');
+    
+    if (existingBadge) {
+        existingBadge.remove();
+    }
+    
+    if (appliedFilters > 0) {
+        const badge = document.createElement('span');
+        badge.className = 'filter-badge';
+        badge.style.cssText = 'background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: 10px;';
+        badge.textContent = `${appliedFilters} filtre aktif (${currentData.length}/${allData.length} kayıt)`;
+        tableHeader.appendChild(badge);
+    }
+}
+
+// renderTable fonksiyonunu güncelleyin
+function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+    
+    if (currentData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="${3 + moduleFields.length}" style="text-align: center; padding: 20px;">
+                    <i class="fas fa-search" style="font-size: 48px; opacity: 0.3; margin-bottom: 10px;"></i>
+                    <p>Kayıt bulunamadı</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    currentData.forEach(record => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${record.id}</td>
+            ${moduleFields.map(field => `<td>${record[field.name] || ''}</td>`).join('')}
+            <td>${new Date(record.created_at).toLocaleString('tr-TR')}</td>
+            <td class="action-cell">
+                <button onclick="editRecord(${record.id})" class="edit">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteRecord(${record.id})" class="delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Tarih aralığı filtresi için
+function addDateRangeFilter() {
+    const dateFilter = document.querySelector('.column-filter[data-field="created_at"]');
+    if (dateFilter) {
+        // Input'u date range picker'a dönüştür
+        dateFilter.type = 'date';
+        
+        // İkinci tarih input'u ekle
+        const dateRangeHtml = `
+            <div style="display: flex; gap: 5px;">
+                <input type="date" class="column-filter date-from" data-field="created_at_from" placeholder="Başlangıç">
+                <input type="date" class="column-filter date-to" data-field="created_at_to" placeholder="Bitiş">
+            </div>
+        `;
+        dateFilter.parentElement.innerHTML = dateRangeHtml;
+    }
+}
+
+// Sayısal karşılaştırma için
+function numericFilter(recordValue, filterValue) {
+    // >, <, =, >= gibi operatörleri destekle
+    if (filterValue.startsWith('>')) {
+        return parseFloat(recordValue) > parseFloat(filterValue.substring(1));
+    } else if (filterValue.startsWith('<')) {
+        return parseFloat(recordValue) < parseFloat(filterValue.substring(1));
+    } else if (filterValue.startsWith('=')) {
+        return parseFloat(recordValue) === parseFloat(filterValue.substring(1));
+    }
+    return recordValue.includes(filterValue);
 }
 </script>
 </body>
