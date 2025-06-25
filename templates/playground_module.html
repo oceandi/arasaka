@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ module.display_name }} - Playground</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">    
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/explorer.css') }}">
         <style>
         :root {
             --primary-color: #1e3a8a;
@@ -1317,7 +1316,12 @@
         </div>
         
         <form id="dataForm">
-            <input type="hidden" id="recordId">
+            <!-- Eski hidden input yerine görünür ID alanı -->
+            <div class="form-group">
+                <label>ID (Benzersiz olmalı)</label>
+                <input type="number" id="recordIdInput" name="recordId" min="1" 
+                       placeholder="Otomatik ID için boş bırakın" class="form-control">
+            </div>
             
             {% for field in module.fields %}
             <div class="form-group">
@@ -1400,7 +1404,8 @@ function renderTable() {
 
 function showAddModal() {
     document.getElementById('modalTitle').textContent = 'Yeni Kayıt';
-    document.getElementById('recordId').value = '';
+    document.getElementById('recordIdInput').value = '';
+    document.getElementById('recordIdInput').readOnly = false; // Yeni kayıtta ID girilebilir
     document.getElementById('dataForm').reset();
     document.getElementById('data-modal').style.display = 'block';
 }
@@ -1410,7 +1415,8 @@ function editRecord(id) {
     if (!record) return;
     
     document.getElementById('modalTitle').textContent = 'Kaydı Düzenle';
-    document.getElementById('recordId').value = id;
+    document.getElementById('recordIdInput').value = id;
+    document.getElementById('recordIdInput').readOnly = true; // Düzenlemede ID değiştirilemez
     
     // Form alanlarını doldur
     moduleFields.forEach(field => {
@@ -1425,6 +1431,8 @@ function editRecord(id) {
 
 function closeModal() {
     document.getElementById('data-modal').style.display = 'none';
+    document.getElementById('recordIdInput').readOnly = false; // Bu satır eksikti!
+    document.getElementById('dataForm').reset();
 }
 
 document.getElementById('dataForm').onsubmit = async function(e) {
@@ -1438,14 +1446,22 @@ document.getElementById('dataForm').onsubmit = async function(e) {
         data[field.name] = formData.get(field.name);
     });
     
-    const recordId = document.getElementById('recordId').value;
+    // ID kontrolü
+    const manualId = document.getElementById('recordIdInput').value;
+    const isEditMode = document.getElementById('recordIdInput').readOnly;
+    
     let url = `/api/playground/${moduleName}/data`;
     let method = 'POST';
     
-    if (recordId) {
-        url += `/${recordId}`;
+    if (isEditMode && manualId) {
+        // Düzenleme modu
+        url += `/${manualId}`;
         method = 'PUT';
+    } else if (!isEditMode && manualId) {
+        // Yeni kayıt - manuel ID
+        data.id = parseInt(manualId);
     }
+    // Else: Yeni kayıt - otomatik ID (boş bırakıldı)
     
     try {
         const response = await fetch(url, {
@@ -1454,7 +1470,7 @@ document.getElementById('dataForm').onsubmit = async function(e) {
             body: JSON.stringify(data)
         });
         
-        if (response.ok) {
+        if (response.ok || response.status === 201) {
             alert('Kayıt başarılı!');
             closeModal();
             loadData();
@@ -1463,7 +1479,8 @@ document.getElementById('dataForm').onsubmit = async function(e) {
             alert('Hata: ' + error.error);
         }
     } catch (error) {
-        alert('Bağlantı hatası!');
+        console.error('Bağlantı hatası:', error);
+        alert('Bağlantı hatası! Konsolu kontrol edin.');
     }
 };
 

@@ -2065,10 +2065,39 @@
         // Sayfa yüklendiğinde AI widget'ı başlat
         document.addEventListener('DOMContentLoaded', function() {
             loadAIWidget();
+            loadPinnedModules();
+            loadFilterData();
+            fetchData();
             
             // Her 5 dakikada bir güncelle
             setInterval(loadAIWidget, 300000);
         });
+
+        async function loadPinnedModules() {
+            try {
+                const response = await fetch('/api/playground/pinned-modules');
+                const modules = await response.json();
+                
+                // Menüye ekle
+                const menuList = document.querySelector('.menu ul');
+                const playgroundIndex = Array.from(menuList.children).findIndex(
+                    li => li.textContent.includes('Playground')
+                );
+                
+                // Playground'dan sonra ekle
+                modules.forEach(module => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <a href="/playground/module/${module.name}">
+                            <i class="${module.icon}"></i> ${module.display_name}
+                        </a>
+                    `;
+                    menuList.insertBefore(li, menuList.children[playgroundIndex + 1]);
+                });
+            } catch (error) {
+                console.error('Sabitlenmiş modüller yüklenemedi:', error);
+            }
+        }
 
         // AI Analiz butonu (mevcut verileri analiz etmek için)
         function analyzeWithAI() {
@@ -2097,6 +2126,8 @@
                 aiWidget.style.display = 'none';
             }
         }
+
+
     </script>
 </body>
 </html>

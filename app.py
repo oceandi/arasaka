@@ -12,6 +12,7 @@ from ai_integration import FiberArizaAI
 import requests
 from ai_config import AI_CONFIG
 from datetime import datetime, timezone, timedelta
+from sqlalchemy import func
 
 # Türkçe locale ayarla
 try:
@@ -134,20 +135,22 @@ class KritikModernizasyon(db.Model):
 class PlaygroundModule(db.Model):
     """Kullanıcı tarafından oluşturulan modüller"""
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)  # Modül adı
-    display_name = db.Column(db.String(200))  # Görünen isim
-    icon = db.Column(db.String(50))  # Font Awesome icon class
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    display_name = db.Column(db.String(200))
+    icon = db.Column(db.String(50))
     description = db.Column(db.Text)
-    fields = db.Column(db.JSON)  # Sütun tanımları
+    fields = db.Column(db.JSON)
+    is_pinned = db.Column(db.Boolean, default=False)  # Menüde göster
+    menu_order = db.Column(db.Integer, default=999)    # Menü sırası
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
-    
+
 class PlaygroundData(db.Model):
-    """Playground modüllerinin verileri"""
-    id = db.Column(db.Integer, primary_key=True)
+    """Playground modüllerinin verileri - ID manuel girilebilir"""
+    id = db.Column(db.Integer, primary_key=True, autoincrement=False)  # Otomatik artış kapalı
     module_id = db.Column(db.Integer, db.ForeignKey('playground_module.id'), nullable=False)
-    data = db.Column(db.JSON)  # Dinamik veri
+    data = db.Column(db.JSON)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -1851,6 +1854,7 @@ def api_get_playground_modules():
         'icon': m.icon,
         'description': m.description,
         'fields': m.fields,
+        'is_pinned': m.is_pinned,  # Bu satır eksikti!
         'created_at': m.created_at.isoformat()
     } for m in modules])
 
@@ -1911,24 +1915,74 @@ def api_get_playground_data(module_name):
         return jsonify([{'id': d.id, **d.data, 'created_at': d.created_at.isoformat()} 
                        for d in data])
 
+@app.route('/api/playground/modules/<int:module_id>/toggle-pin', methods=['POST'])
+def api_toggle_pin_module(module_id):
+    """Modülü menüye sabitle/kaldır"""
+    module = PlaygroundModule.query.get_or_404(module_id)
+    module.is_pinned = not module.is_pinned
+    
+    try:
+        db.session.commit()
+        return jsonify({'is_pinned': module.is_pinned})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
 @app.route('/api/playground/<module_name>/data', methods=['POST'])
 def api_create_playground_data(module_name):
-    """Modüle veri ekle"""
+    """Modüle veri ekle - manuel ID desteği ile"""
     module = PlaygroundModule.query.filter_by(name=module_name).first_or_404()
     data = request.get_json()
     
+    app.logger.info(f"POST data received for {module_name}: {data}")  # Debug log
+    
     try:
-        record = PlaygroundData(
-            module_id=module.id,
-            data=data
-        )
+        # Manuel ID varsa kontrol et
+        if 'id' in data and data['id']:
+            existing = PlaygroundData.query.get(data['id'])
+            if existing:
+                return jsonify({'error': f"ID {data['id']} zaten kullanımda!"}), 400
+            
+            record_id = data.pop('id')
+            record = PlaygroundData(
+                id=record_id,
+                module_id=module.id,
+                data=data
+            )
+        else:
+            # Otomatik ID ata
+            from sqlalchemy import func
+            max_id = db.session.query(func.max(PlaygroundData.id)).scalar() or 0
+            record = PlaygroundData(
+                id=max_id + 1,
+                module_id=module.id,
+                data=data
+            )
+        
         db.session.add(record)
         db.session.commit()
+        
+        app.logger.info(f"Record created with ID: {record.id}")  # Debug log
         
         return jsonify({'id': record.id, 'message': 'Kayıt eklendi'}), 201
     except Exception as e:
         db.session.rollback()
+        app.logger.error(f"Error creating playground data: {str(e)}")
         return jsonify({'error': str(e)}), 400
+
+@app.route('/api/playground/pinned-modules')
+def api_get_pinned_modules():
+    """Menüde gösterilecek modülleri getir"""
+    modules = PlaygroundModule.query.filter_by(
+        is_pinned=True, 
+        is_active=True
+    ).order_by(PlaygroundModule.menu_order).all()
+    
+    return jsonify([{
+        'name': m.name,
+        'display_name': m.display_name,
+        'icon': m.icon
+    } for m in modules])
 
 @app.route('/api/playground/<module_name>/data/<int:data_id>', methods=['PUT'])
 def api_update_playground_data(module_name, data_id):

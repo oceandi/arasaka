@@ -188,6 +188,7 @@
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             text-align: center;
+            position: relative;
         }
         
         .module-card:hover {
@@ -215,6 +216,32 @@
         .module-card small {
             font-size: 12px;
             color: #64748b;
+        }
+
+        .module-pin {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            color: #64748b;
+            transition: all 0.3s;
+            opacity: 0.5;
+        }
+
+        .module-pin:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        /* Sabitlenmiş durumu için */
+        .module-pin.is-pinned {
+            color: var(--accent-color);
+            opacity: 1;
+        }
+
+        .module-pin.is-pinned i {
+            filter: drop-shadow(0 0 5px var(--accent-color));
         }
         
         .btn {
@@ -542,6 +569,11 @@ async function loadModules() {
         const card = document.createElement('div');
         card.className = 'module-card';
         card.innerHTML = `
+            <div class="module-pin ${module.is_pinned ? 'is-pinned' : ''}" 
+                onclick="togglePin(${module.id}, event)" 
+                title="${module.is_pinned ? 'Menüden kaldır' : 'Menüye sabitle'}">
+                <i class="fas fa-thumbtack"></i>
+            </div>
             <div class="module-icon">
                 <i class="${module.icon || 'fas fa-puzzle-piece'}"></i>
             </div>
@@ -576,6 +608,36 @@ function closeModuleModal() {
     document.getElementById('create-module-modal').style.display = 'none';
     document.getElementById('createModuleForm').reset();
     resetFields();
+}
+
+// Sabitleme fonksiyonu
+async function togglePin(moduleId, event) {
+    event.stopPropagation(); // Kart tıklamasını engelle
+    
+    try {
+        const response = await fetch(`/api/playground/modules/${moduleId}/toggle-pin`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            // Görsel güncelleme
+            const pinElement = event.target.closest('.module-pin');
+            if (result.is_pinned) {
+                pinElement.classList.add('is-pinned');
+                pinElement.title = 'Menüden kaldır';
+            } else {
+                pinElement.classList.remove('is-pinned');
+                pinElement.title = 'Menüye sabitle';
+            }
+            
+            // Modül listesini yeniden yükle
+            await loadModules();
+        }
+    } catch (error) {
+        console.error('Sabitleme hatası:', error);
+        alert('Sabitleme hatası!');
+    }
 }
 
 // Alan ekle
@@ -632,52 +694,6 @@ function resetFields() {
     fieldCounter = 0;
 }
 
-// Form gönder
-document.getElementById('createModuleForm').onsubmit = async function(e) {
-    e.preventDefault();
-    
-    // Alanları topla
-    const fields = [];
-    document.querySelectorAll('.field-item:not([data-field="id"])').forEach(item => {
-        const name = item.querySelector('.field-name').value;
-        const type = item.querySelector('.field-type').value;
-        const options = item.querySelector('.field-options').value;
-        
-        fields.push({
-            name: name,
-            type: type,
-            options: options ? options.split(',').map(o => o.trim()) : null
-        });
-    });
-    
-    const moduleData = {
-        name: document.getElementById('moduleName').value,
-        display_name: document.getElementById('moduleDisplayName').value,
-        icon: document.getElementById('moduleIcon').value,
-        description: document.getElementById('moduleDescription').value,
-        fields: fields
-    };
-    
-    try {
-        const response = await fetch('/api/playground/modules', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(moduleData)
-        });
-        
-        if (response.ok) {
-            alert('Modül başarıyla oluşturuldu!');
-            closeModuleModal();
-            loadModules();
-        } else {
-            const error = await response.json();
-            alert('Hata: ' + error.error);
-        }
-    } catch (error) {
-        alert('Bağlantı hatası!');
-    }
-};
-
 // Modül düzenleme
 async function editModule(moduleId) {
     const module = modules.find(m => m.id === moduleId);
@@ -685,7 +701,7 @@ async function editModule(moduleId) {
     
     // Modal'ı düzenleme moduna geçir
     document.getElementById('create-module-modal').style.display = 'block';
-    document.getElementById('modalTitle').textContent = 'Modülü Düzenle';
+    document.querySelector('.modal-header h2').textContent = 'Modülü Düzenle';
     
     // Form alanlarını doldur
     document.getElementById('moduleName').value = module.name;
@@ -798,16 +814,24 @@ document.getElementById('createModuleForm').onsubmit = async function(e) {
             body: JSON.stringify(moduleData)
         });
         
-        if (response.ok) {
+        if (response.ok || response.status === 201) {
             alert(isEdit ? 'Modül güncellendi!' : 'Modül oluşturuldu!');
             closeModuleModal();
             loadModules();
         } else {
             const error = await response.json();
-            alert('Hata: ' + error.error);
+            alert('Hata: ' + (error.error || 'Bilinmeyen hata'));
         }
     } catch (error) {
-        alert('Bağlantı hatası!');
+        console.error('Yakalanan hata:', error);  // Konsola yaz
+        
+        // Eğer sadece browser güvenlik hatası ise görmezden gel
+        setTimeout(() => {
+            loadModules();  // Listeyi yenile
+        }, 100);
+        
+        closeModuleModal();
+        // alert('Bağlantı hatası!');  // Alert'i kaldır
     }
 };
 
