@@ -2113,5 +2113,58 @@ def api_delete_playground_module(module_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 400
 
+@app.route('/api/playground/<module_name>/import', methods=['POST'])
+def api_import_playground_data(module_name):
+    """Toplu veri import et"""
+    module = PlaygroundModule.query.filter_by(name=module_name).first_or_404()
+    data_list = request.get_json()
+    
+    if not isinstance(data_list, list):
+        return jsonify({'error': 'Veri listesi bekleniyor'}), 400
+    
+    success_count = 0
+    errors = []
+    
+    for idx, data in enumerate(data_list):
+        try:
+            # Manuel ID kontrolü
+            if 'id' in data and data['id']:
+                record_id = data.pop('id')
+                existing = PlaygroundData.query.get(record_id)
+                if existing:
+                    errors.append(f"Satır {idx + 1}: ID {record_id} zaten mevcut")
+                    continue
+                    
+                record = PlaygroundData(
+                    id=record_id,
+                    module_id=module.id,
+                    data=data
+                )
+            else:
+                # Otomatik ID
+                from sqlalchemy import func
+                max_id = db.session.query(func.max(PlaygroundData.id)).scalar() or 0
+                record = PlaygroundData(
+                    id=max_id + success_count + 1,
+                    module_id=module.id,
+                    data=data
+                )
+            
+            db.session.add(record)
+            success_count += 1
+            
+        except Exception as e:
+            errors.append(f"Satır {idx + 1}: {str(e)}")
+    
+    try:
+        db.session.commit()
+        return jsonify({
+            'success': success_count,
+            'errors': errors
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
 if __name__ == '__main__':
     app.run(debug=True)

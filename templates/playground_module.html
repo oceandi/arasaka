@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ module.display_name }} - Playground</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
         <style>
         :root {
             --primary-color: #1e3a8a;
@@ -1282,6 +1283,7 @@
                 Kayıtlar
                 <div class="action-buttons">
                     <button onclick="showAddModal()"><i class="fas fa-plus"></i> Yeni Ekle</button>
+                    <button onclick="showImportModal()"><i class="fas fa-file-import"></i> Excel Import</button>
                     <button onclick="exportData()"><i class="fas fa-file-excel"></i> Excel Export</button>
                 </div>
             </h3>
@@ -1359,6 +1361,47 @@
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">İptal</button>
             </div>
         </form>
+    </div>
+</div>
+
+<div id="import-modal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h2>Excel'den Veri Yükle</h2>
+            <span class="close" onclick="closeImportModal()">&times;</span>
+        </div>
+        
+        <div class="import-area" id="importArea">
+            <i class="fas fa-file-excel"></i>
+            <h3>Excel Dosyası Seç</h3>
+            <p>Dosyanızı buraya sürükleyin veya tıklayın</p>
+            <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="display:none;">
+        </div>
+
+        <div style="text-align: center; margin: 20px 0;">
+            <button class="btn btn-secondary" onclick="downloadTemplate()">
+                <i class="fas fa-download"></i> Boş Şablon İndir
+            </button>
+        </div>
+        
+        <div id="importPreview" style="display:none;">
+            <h4>Önizleme</h4>
+            <div class="table-wrapper" style="max-height: 300px; overflow-y: auto;">
+                <table id="previewTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="confirmImport()">İçeri Aktar</button>
+                <button class="btn btn-secondary" onclick="cancelImport()">İptal</button>
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            <small><i class="fas fa-info-circle"></i> Excel dosyanızda şu sütunlar olmalı: ID (opsiyonel), 
+            {% for field in module.fields %}{{ field.name }}{% if not loop.last %}, {% endif %}{% endfor %}</small>
+        </div>
     </div>
 </div>
 
@@ -1503,6 +1546,236 @@ async function deleteRecord(id) {
 
 function exportData() {
     window.location.href = `/api/playground/${moduleName}/export`;
+}
+
+let importData = [];
+
+// Import modal göster
+function showImportModal() {
+    document.getElementById('import-modal').style.display = 'block';
+}
+
+// Import modal kapat
+function closeImportModal() {
+    document.getElementById('import-modal').style.display = 'none';
+    document.getElementById('importPreview').style.display = 'none';
+    document.getElementById('importFileInput').value = '';
+    importData = [];
+}
+
+// Import alanı click/drag-drop
+document.getElementById('importArea').onclick = function() {
+    document.getElementById('importFileInput').click();
+};
+
+document.getElementById('importArea').ondragover = function(e) {
+    e.preventDefault();
+    this.style.borderColor = 'var(--accent-color)';
+};
+
+document.getElementById('importArea').ondragleave = function(e) {
+    e.preventDefault();
+    this.style.borderColor = '';
+};
+
+document.getElementById('importArea').ondrop = function(e) {
+    e.preventDefault();
+    this.style.borderColor = '';
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        handleImportFile(files[0]);
+    }
+};
+
+document.getElementById('importFileInput').onchange = function(e) {
+    if (this.files.length > 0) {
+        handleImportFile(this.files[0]);
+    }
+};
+
+// Excel dosyasını işle
+function handleImportFile(file) {
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+            
+            if (jsonData.length === 0) {
+                alert('Excel dosyası boş!');
+                return;
+            }
+            
+            // Önizleme göster
+            showImportPreview(jsonData);
+            
+        } catch (error) {
+            alert('Excel dosyası okunamadı: ' + error.message);
+        }
+    };
+    
+    reader.readAsArrayBuffer(file);
+}
+
+// Import önizlemesi
+function showImportPreview(data) {
+    importData = data;
+    const preview = document.getElementById('importPreview');
+    
+    // Excel başlıklarını al
+    const excelHeaders = Object.keys(data[0]);
+    
+    // Alan eşleştirme tablosu HTML'i
+    let mappingHtml = `
+        <div style="margin-bottom: 20px;">
+            <h4>Alan Eşleştirme</h4>
+            <table style="width: 100%; background: rgba(0,0,0,0.2); padding: 10px;">
+                <tr>
+                    <th style="padding: 8px;">Excel Sütunu</th>
+                    <th style="padding: 8px;">→</th>
+                    <th style="padding: 8px;">Modül Alanı</th>
+                </tr>`;
+    
+    excelHeaders.forEach(header => {
+        mappingHtml += `
+            <tr>
+                <td style="padding: 5px;">${header}</td>
+                <td style="padding: 5px; text-align: center;">→</td>
+                <td style="padding: 5px;">
+                    <select class="field-mapping" data-excel="${header}" style="width: 100%;">
+                        <option value="">-- Atla --</option>
+                        ${moduleFields.map(field => 
+                            `<option value="${field.name}" ${header.toLowerCase() === field.name.toLowerCase() ? 'selected' : ''}>
+                                ${field.name}
+                            </option>`
+                        ).join('')}
+                    </select>
+                </td>
+            </tr>`;
+    });
+    
+    mappingHtml += `
+            </table>
+        </div>`;
+    
+    // Önizleme tablosu HTML'i
+    const thead = document.querySelector('#previewTable thead');
+    const tbody = document.querySelector('#previewTable tbody');
+    
+    // Başlıkları oluştur
+    thead.innerHTML = `<tr>${excelHeaders.map(h => `<th>${h}</th>`).join('')}</tr>`;
+    
+    // İlk 5 satırı göster
+    tbody.innerHTML = '';
+    data.slice(0, 5).forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = excelHeaders.map(h => `<td>${row[h] || ''}</td>`).join('');
+        tbody.appendChild(tr);
+    });
+    
+    if (data.length > 5) {
+        tbody.innerHTML += `<tr><td colspan="${excelHeaders.length}" style="text-align:center;">... ve ${data.length - 5} satır daha</td></tr>`;
+    }
+    
+    // Alan eşleştirme tablosunu önizlemeden önce ekle
+    const previewContent = preview.querySelector('.table-wrapper');
+    previewContent.insertAdjacentHTML('beforebegin', mappingHtml);
+    
+    preview.style.display = 'block';
+}
+
+// Import onayla
+async function confirmImport() {
+    if (!importData.length) return;
+    
+    // Alan eşleştirmelerini al
+    const mappings = {};
+    document.querySelectorAll('.field-mapping').forEach(select => {
+        const excelField = select.getAttribute('data-excel');
+        const moduleField = select.value;
+        if (moduleField) {
+            mappings[excelField] = moduleField;
+        }
+    });
+    
+    console.log('Field mappings:', mappings); // Debug
+    
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+    
+    // Her satırı işle
+    for (const row of importData) {
+        try {
+            const data = {};
+            
+            // Manuel ID varsa
+            if (row.ID && row.ID !== '') {
+                data.id = parseInt(row.ID);
+            }
+            
+            // Eşleştirmelere göre verileri al
+            Object.entries(mappings).forEach(([excelField, moduleField]) => {
+                if (row[excelField] !== undefined && row[excelField] !== '') {
+                    data[moduleField] = row[excelField];
+                }
+            });
+            
+            console.log('Mapped data:', data); // Debug
+            
+            // API'ye gönder
+            const response = await fetch(`/api/playground/${moduleName}/data`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            if (response.ok || response.status === 201) {
+                successCount++;
+            } else {
+                const error = await response.json();
+                errorCount++;
+                errors.push(`Satır ${importData.indexOf(row) + 1}: ${error.error}`);
+            }
+            
+        } catch (error) {
+            errorCount++;
+            errors.push(`Satır ${importData.indexOf(row) + 1}: ${error.message}`);
+        }
+    }
+    
+    // Sonuç mesajı
+    let message = `İmport tamamlandı!\n✓ Başarılı: ${successCount}\n✗ Hatalı: ${errorCount}`;
+    if (errors.length > 0) {
+        message += '\n\nHatalar:\n' + errors.slice(0, 5).join('\n');
+        if (errors.length > 5) {
+            message += `\n... ve ${errors.length - 5} hata daha`;
+        }
+    }
+    
+    alert(message);
+    closeImportModal();
+    loadData(); // Tabloyu yenile
+}
+
+// Import iptal
+function cancelImport() {
+    closeImportModal();
+}
+
+// Export fonksiyonunu güncelle (örnek Excel oluşturma)
+function downloadTemplate() {
+    // Boş template oluştur
+    const headers = ['ID', ...moduleFields.map(f => f.name)];
+    const ws = XLSX.utils.aoa_to_sheet([headers]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Template');
+    
+    // İndir
+    XLSX.writeFile(wb, `${moduleName}_template.xlsx`);
 }
 </script>
 </body>
