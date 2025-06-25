@@ -131,6 +131,28 @@ class KritikModernizasyon(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+class PlaygroundModule(db.Model):
+    """Kullanıcı tarafından oluşturulan modüller"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)  # Modül adı
+    display_name = db.Column(db.String(200))  # Görünen isim
+    icon = db.Column(db.String(50))  # Font Awesome icon class
+    description = db.Column(db.Text)
+    fields = db.Column(db.JSON)  # Sütun tanımları
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+    
+class PlaygroundData(db.Model):
+    """Playground modüllerinin verileri"""
+    id = db.Column(db.Integer, primary_key=True)
+    module_id = db.Column(db.Integer, db.ForeignKey('playground_module.id'), nullable=False)
+    data = db.Column(db.JSON)  # Dinamik veri
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    module = db.relationship('PlaygroundModule', backref='records')
+
 def get_rag():
     """RAG'i lazy load et"""
     global rag
@@ -1813,6 +1835,229 @@ def ai_widget_data():
         "trend": "increasing" if daily_avg > 1 else "stable",
         "confidence": 0.75
     })
+
+@app.route('/playground')
+def playground():
+    return render_template('playground.html')
+
+@app.route('/api/playground/modules', methods=['GET'])
+def api_get_playground_modules():
+    """Tüm playground modüllerini getir"""
+    modules = PlaygroundModule.query.filter_by(is_active=True).all()
+    return jsonify([{
+        'id': m.id,
+        'name': m.name,
+        'display_name': m.display_name,
+        'icon': m.icon,
+        'description': m.description,
+        'fields': m.fields,
+        'created_at': m.created_at.isoformat()
+    } for m in modules])
+
+@app.route('/api/playground/modules', methods=['POST'])
+def api_create_playground_module():
+    """Yeni playground modülü oluştur"""
+    data = request.get_json()
+    
+    # Modül adı kontrolü
+    existing = PlaygroundModule.query.filter_by(name=data['name']).first()
+    if existing:
+        return jsonify({'error': 'Bu modül adı zaten kullanılıyor'}), 400
+    
+    try:
+        module = PlaygroundModule(
+            name=data['name'],
+            display_name=data['display_name'],
+            icon=data.get('icon', 'fas fa-puzzle-piece'),
+            description=data.get('description', ''),
+            fields=data['fields']
+        )
+        db.session.add(module)
+        db.session.commit()
+        
+        return jsonify({'id': module.id, 'message': 'Modül oluşturuldu'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/playground/module/<module_name>')
+def playground_module(module_name):
+    """Playground modülü detay sayfası"""
+    module = PlaygroundModule.query.filter_by(name=module_name).first_or_404()
+    return render_template('playground_module.html', module=module)
+
+@app.route('/api/playground/<module_name>/data', methods=['GET'])
+def api_get_playground_data(module_name):
+    """Modül verilerini getir"""
+    module = PlaygroundModule.query.filter_by(name=module_name).first_or_404()
+    
+    # Pagination
+    page = request.args.get('page', type=int)
+    per_page = request.args.get('per_page', type=int)
+    
+    query = PlaygroundData.query.filter_by(module_id=module.id)
+    
+    if page and per_page:
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        return jsonify({
+            'data': [{'id': d.id, **d.data, 'created_at': d.created_at.isoformat()} 
+                    for d in pagination.items],
+            'total': pagination.total,
+            'page': pagination.page,
+            'pages': pagination.pages
+        })
+    else:
+        data = query.all()
+        return jsonify([{'id': d.id, **d.data, 'created_at': d.created_at.isoformat()} 
+                       for d in data])
+
+@app.route('/api/playground/<module_name>/data', methods=['POST'])
+def api_create_playground_data(module_name):
+    """Modüle veri ekle"""
+    module = PlaygroundModule.query.filter_by(name=module_name).first_or_404()
+    data = request.get_json()
+    
+    try:
+        record = PlaygroundData(
+            module_id=module.id,
+            data=data
+        )
+        db.session.add(record)
+        db.session.commit()
+        
+        return jsonify({'id': record.id, 'message': 'Kayıt eklendi'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/playground/<module_name>/data/<int:data_id>', methods=['PUT'])
+def api_update_playground_data(module_name, data_id):
+    """Modül verisini güncelle"""
+    module = PlaygroundModule.query.filter_by(name=module_name).first_or_404()
+    record = PlaygroundData.query.filter_by(id=data_id, module_id=module.id).first_or_404()
+    
+    data = request.get_json()
+    record.data = data
+    record.updated_at = datetime.utcnow()
+    
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Güncellendi'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/playground/<module_name>/data/<int:data_id>', methods=['DELETE'])
+def api_delete_playground_data(module_name, data_id):
+    """Modül verisini sil"""
+    module = PlaygroundModule.query.filter_by(name=module_name).first_or_404()
+    record = PlaygroundData.query.filter_by(id=data_id, module_id=module.id).first_or_404()
+    
+    try:
+        db.session.delete(record)
+        db.session.commit()
+        return jsonify({'message': 'Silindi'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/playground/<module_name>/export')
+def api_export_playground_data(module_name):
+    """Modül verilerini Excel olarak export et"""
+    module = PlaygroundModule.query.filter_by(name=module_name).first_or_404()
+    records = PlaygroundData.query.filter_by(module_id=module.id).all()
+    
+    # Sütun başlıklarını hazırla
+    columns = ['ID']
+    for field in module.fields:
+        columns.append(field['name'])
+    columns.append('Oluşturulma Tarihi')
+    columns.append('Güncelleme Tarihi')
+    
+    # Verileri hazırla
+    data_list = []
+    for record in records:
+        row = [record.id]
+        
+        # Her alan için veriyi ekle
+        for field in module.fields:
+            value = record.data.get(field['name'], '')
+            row.append(value)
+        
+        # Tarih alanları
+        row.append(record.created_at.strftime('%d.%m.%Y %H:%M'))
+        row.append(record.updated_at.strftime('%d.%m.%Y %H:%M') if record.updated_at else '')
+        
+        data_list.append(row)
+    
+    # DataFrame oluştur
+    df = pd.DataFrame(data_list, columns=columns)
+    
+    # Excel oluştur
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name=module.display_name[:31], index=False)  # Excel sheet adı max 31 karakter
+        worksheet = writer.sheets[module.display_name[:31]]
+        
+        # Sütun genişlikleri
+        for i, col in enumerate(df.columns):
+            column_width = max(df[col].astype(str).map(len).max(), len(col)) + 2
+            worksheet.set_column(i, i, column_width)
+    
+    output.seek(0)
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'{module.name}_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+    )
+
+@app.route('/api/playground/modules/<int:module_id>', methods=['PUT'])
+def api_update_playground_module(module_id):
+    """Playground modülünü güncelle"""
+    module = PlaygroundModule.query.get_or_404(module_id)
+    data = request.get_json()
+    
+    try:
+        # İsim değiştirilmeye çalışılıyorsa kontrol et
+        if data['name'] != module.name:
+            existing = PlaygroundModule.query.filter_by(name=data['name']).first()
+            if existing:
+                return jsonify({'error': 'Bu modül adı zaten kullanılıyor'}), 400
+        
+        module.name = data['name']
+        module.display_name = data['display_name']
+        module.icon = data.get('icon', 'fas fa-puzzle-piece')
+        module.description = data.get('description', '')
+        module.fields = data['fields']
+        module.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        return jsonify({'message': 'Modül güncellendi'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/playground/modules/<int:module_id>', methods=['DELETE'])
+def api_delete_playground_module(module_id):
+    """Playground modülünü sil"""
+    module = PlaygroundModule.query.get_or_404(module_id)
+    
+    try:
+        # Önce modüle ait tüm verileri sil
+        PlaygroundData.query.filter_by(module_id=module.id).delete()
+        
+        # Sonra modülü sil
+        db.session.delete(module)
+        db.session.commit()
+        
+        return jsonify({'message': 'Modül ve tüm verileri silindi'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)
