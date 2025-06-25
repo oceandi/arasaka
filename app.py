@@ -389,39 +389,89 @@ def delete_ariza(id):
 
 @app.route('/api/arizalar')
 def api_arizalar():
-    arizalar = FiberAriza.query.all()
-    return jsonify([{
-        'id': a.id,
-        'hafta': a.hafta,
-        'bolge': a.bolge,
-        'bultenNo': a.bulten_no,
-        'il': a.il,
-        'guzergah': a.guzergah,
-        'lokasyon': a.lokasyon,
-        'arizaBaslangic': a.ariza_baslangic.isoformat() if a.ariza_baslangic else '',
-        'arizaBitis': a.ariza_bitis.isoformat() if a.ariza_bitis else '',
-        'arizaKonsolide': a.ariza_konsolide,
-        'arizaKokNeden': a.ariza_kok_neden,
-        'hagsAsildi': a.hags_asildi_mi,
-        'refakatDurumu': a.refakat_durumu,
-        'servisEtkisi': a.servis_etkisi,
-        'arizaSuresi': a.ariza_suresi,
-        # Son 14 alan
-        'kordinatA': a.kordinat_a,
-        'kordinatB': a.kordinat_b,
-        'etkilenenServisBilgileri': a.serivs_etkisi,  # Frontend'de bu isimle kullanılıyor
-        'kabloTipi': a.kablo_tipi,
-        'hagsSuresi': a.hags_suresi,
-        'kesintiSuresi': a.kesinti_suresi,
-        'kaliciCozum': a.kalici_cozum,
-        'kullanilanMalzeme': a.kullanilan_malzeme,
-        'aciklama': a.aciklama,
-        'refakatSaglandiMi': a.refakat_saglandi_mi,
-        'deplaseIslahIhtiyaci': a.deplase_islah_ihtiyaci,
-        'hasarTazminSureci': a.hasar_tazmin_sureci,
-        'otdrOlcumBilgileri': a.otdr_olcum_bilgileri,
-        'yil': a.yil
-    } for a in arizalar])
+    # Pagination parametrelerini kontrol et
+    page = request.args.get('page', type=int)
+    per_page = request.args.get('per_page', type=int)
+    
+    # Eğer pagination parametreleri yoksa, tüm kayıtları döndür (mevcut davranış)
+    if page is None or per_page is None:
+        arizalar = FiberAriza.query.all()
+        return jsonify([{
+            'id': a.id,
+            'hafta': a.hafta,
+            'bolge': a.bolge,
+            'bultenNo': a.bulten_no,
+            'il': a.il,
+            'guzergah': a.guzergah,
+            'lokasyon': a.lokasyon,
+            'arizaBaslangic': a.ariza_baslangic.isoformat() if a.ariza_baslangic else '',
+            'arizaBitis': a.ariza_bitis.isoformat() if a.ariza_bitis else '',
+            'arizaKonsolide': a.ariza_konsolide,
+            'arizaKokNeden': a.ariza_kok_neden,
+            'hagsAsildi': a.hags_asildi_mi,
+            'refakatDurumu': a.refakat_durumu,
+            'servisEtkisi': a.servis_etkisi,
+            'arizaSuresi': a.ariza_suresi,
+            'kordinatA': a.kordinat_a,
+            'kordinatB': a.kordinat_b,
+            'etkilenenServisBilgileri': a.etkilenen_servis_bilgileri,
+            'kabloTipi': a.kablo_tipi,
+            'hagsSuresi': a.hags_suresi,
+            'kesintiSuresi': a.kesinti_suresi,
+            'kaliciCozum': a.kalici_cozum,
+            'kullanilanMalzeme': a.kullanilan_malzeme,
+            'aciklama': a.aciklama,
+            'refakatSaglandiMi': a.refakat_saglandi_mi,
+            'deplaseIslahIhtiyaci': a.deplase_islah_ihtiyaci,
+            'hasarTazminSureci': a.hasar_tazmin_sureci,
+            'otdrOlcumBilgileri': a.otdr_olcum_bilgileri,
+            'yil': a.yil
+        } for a in arizalar])
+    
+    # Pagination parametreleri varsa, paginated response döndür
+    pagination = FiberAriza.query.paginate(
+        page=page, 
+        per_page=per_page, 
+        error_out=False
+    )
+    
+    return jsonify({
+        'data': [{
+            'id': a.id,
+            'hafta': a.hafta,
+            'bolge': a.bolge,
+            'bultenNo': a.bulten_no,
+            'il': a.il,
+            'guzergah': a.guzergah,
+            'lokasyon': a.lokasyon,
+            'arizaBaslangic': a.ariza_baslangic.isoformat() if a.ariza_baslangic else '',
+            'arizaBitis': a.ariza_bitis.isoformat() if a.ariza_bitis else '',
+            'arizaKonsolide': a.ariza_konsolide,
+            'arizaKokNeden': a.ariza_kok_neden,
+            'hagsAsildi': a.hags_asildi_mi,
+            'refakatDurumu': a.refakat_durumu,
+            'servisEtkisi': a.servis_etkisi,
+            'arizaSuresi': a.ariza_suresi,
+            'kordinatA': a.kordinat_a,
+            'kordinatB': a.kordinat_b,
+            'etkilenenServisBilgileri': a.etkilenen_servis_bilgileri,
+            'kabloTipi': a.kablo_tipi,
+            'hagsSuresi': a.hags_suresi,
+            'kesintiSuresi': a.kesinti_suresi,
+            'kaliciCozum': a.kalici_cozum,
+            'kullanilanMalzeme': a.kullanilan_malzeme,
+            'aciklama': a.aciklama,
+            'refakatSaglandiMi': a.refakat_saglandi_mi,
+            'deplaseIslahIhtiyaci': a.deplase_islah_ihtiyaci,
+            'hasarTazminSureci': a.hasar_tazmin_sureci,
+            'otdrOlcumBilgileri': a.otdr_olcum_bilgileri,
+            'yil': a.yil
+        } for a in pagination.items],
+        'total': pagination.total,
+        'page': pagination.page,
+        'pages': pagination.pages,
+        'per_page': pagination.per_page
+    })
 
 @app.route('/api/ariza', methods=['POST'])
 def api_add_ariza():

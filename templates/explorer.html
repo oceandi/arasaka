@@ -979,7 +979,7 @@
                     </div>
                     <div class="info">
                         <h3 id="solvedCount">0</h3>
-                        <p>Çözülen Arıza Sayısı</p>
+                        <p>Kalıcı Çözülen Arıza Sayısı</p>
                     </div>
                 </div>
                 <div class="stat-card danger">
@@ -996,15 +996,15 @@
             <!-- Google Maps Harita -->
             <div class="map-card" id="mapCard" style="display: none;">
                 <h3>
-                    Arıza Haritası
+                    Fiber Arıza Haritası
                     <div class="action-buttons">
                         <button onclick="toggleMapView()"><i class="fas fa-eye"></i> Gizle</button>
                     </div>
                 </h3>
                 <div class="map-controls">
                     <button onclick="filterMap('all')"><i class="fas fa-globe"></i> Tümü</button>
-                    <button onclick="filterMap('solved')"><i class="fas fa-check"></i> Çözülenler</button>
-                    <button onclick="filterMap('unsolved')"><i class="fas fa-times"></i> Çözülmeyenler</button>
+                    <button onclick="filterMap('solved')"><i class="fas fa-check"></i> Kalıcı Çözülenler</button>
+                    <button onclick="filterMap('unsolved')"><i class="fas fa-times"></i> Kalıcı Çözülmeyenler</button>
                 </div>
                 <div id="map"></div>
             </div>
@@ -1067,7 +1067,7 @@
                     </div>
                 </div>
                 <div class="chart-card">
-                    <h3>Arıza Çözüm Durumu</h3>
+                    <h3>Kalıcı Arıza Çözüm Durumu</h3>
                     <div class="chart-wrapper">
                         <canvas id="solutionChart"></canvas>
                     </div>
