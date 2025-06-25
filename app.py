@@ -11,6 +11,7 @@ import locale
 from ai_integration import FiberArizaAI
 import requests
 from ai_config import AI_CONFIG
+from datetime import datetime, timezone, timedelta
 
 # Türkçe locale ayarla
 try:
@@ -64,15 +65,15 @@ class FiberAriza(db.Model):
     hags_suresi = db.Column(db.String(20))
     kesinti_suresi = db.Column(db.String(20))
     kalici_cozum = db.Column(db.String(10))
-    kullanilan_malzeme = db.Column(db.String(200))
+    kullanilan_malzeme = db.Column(db.String(200))  # Bu eksikti!
     aciklama = db.Column(db.Text)
-    serivs_etkisi = db.Column(db.String(50))  # H sütunu için yeni alan
+    serivs_etkisi = db.Column(db.String(50))  # Typo ile
     refakat_saglandi_mi = db.Column(db.String(10))
     deplase_islah_ihtiyaci = db.Column(db.String(10))
     hasar_tazmin_sureci = db.Column(db.String(10))
     otdr_olcum_bilgileri = db.Column(db.Text)
-    etkilenen_servis_bilgileri = db.Column(db.Text)  # H sütunu için doğru alan
-    yil = db.Column(db.String(10))  # Yıl alanı
+    etkilenen_servis_bilgileri = db.Column(db.Text)  # Bu eksikti!
+    yil = db.Column(db.String(10))
 
 class DeplaseIslah(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -141,6 +142,19 @@ def get_rag():
             print(f"RAG yüklenemedi: {e}")
             rag = None
     return rag    
+
+def parse_utc_date(date_string):
+    """UTC tarihini parse et ve Türkiye saatine çevir"""
+    if not date_string:
+        return None
+    try:
+        # UTC'den parse et
+        utc_date = datetime.fromisoformat(date_string.replace('Z', '+00:00'))
+        # Türkiye saatine çevir (UTC+3)
+        turkey_date = utc_date + timedelta(hours=3)
+        return turkey_date.replace(tzinfo=None)  # timezone bilgisini kaldır
+    except:
+        return datetime.fromisoformat(date_string)
 
 @app.route('/')
 def home():
@@ -383,32 +397,45 @@ def api_arizalar():
         'bultenNo': a.bulten_no,
         'il': a.il,
         'guzergah': a.guzergah,
-        'kordinatA': a.kordinat_a,
-        'kordinatB': a.kordinat_b,
-        'servisEtkisi': a.serivs_etkisi,
         'lokasyon': a.lokasyon,
         'arizaBaslangic': a.ariza_baslangic.isoformat() if a.ariza_baslangic else '',
         'arizaBitis': a.ariza_bitis.isoformat() if a.ariza_bitis else '',
-        'kabloTipi': a.kablo_tipi,
-        'hagsSuresi': a.hags_suresi,
-        'kesintiSuresi': a.kesinti_suresi,
         'arizaKonsolide': a.ariza_konsolide,
         'arizaKokNeden': a.ariza_kok_neden,
         'hagsAsildi': a.hags_asildi_mi,
         'refakatDurumu': a.refakat_durumu,
-        'servisEtkiDurum': a.servis_etkisi,
+        'servisEtkisi': a.servis_etkisi,
         'arizaSuresi': a.ariza_suresi,
+        # Son 14 alan
+        'kordinatA': a.kordinat_a,
+        'kordinatB': a.kordinat_b,
+        'etkilenenServisBilgileri': a.serivs_etkisi,  # Frontend'de bu isimle kullanılıyor
+        'kabloTipi': a.kablo_tipi,
+        'hagsSuresi': a.hags_suresi,
+        'kesintiSuresi': a.kesinti_suresi,
         'kaliciCozum': a.kalici_cozum,
         'kullanilanMalzeme': a.kullanilan_malzeme,
-        'aciklama': a.aciklama
+        'aciklama': a.aciklama,
+        'refakatSaglandiMi': a.refakat_saglandi_mi,
+        'deplaseIslahIhtiyaci': a.deplase_islah_ihtiyaci,
+        'hasarTazminSureci': a.hasar_tazmin_sureci,
+        'otdrOlcumBilgileri': a.otdr_olcum_bilgileri,
+        'yil': a.yil
     } for a in arizalar])
 
 @app.route('/api/ariza', methods=['POST'])
 def api_add_ariza():
     data = request.get_json()
     
-    # Field mapping düzeltmesi
+    # Debug için
+    app.logger.info(f"POST - Gelen veri: {data}")
+    
     try:
+        # Bülten numarası kontrolü
+        existing = FiberAriza.query.filter_by(bulten_no=data.get('bultenNo')).first()
+        if existing:
+            return jsonify({'error': 'Bu Bülten Numarası zaten mevcut!'}), 400
+        
         ariza = FiberAriza(
             hafta=data.get('hafta'),
             bolge=data.get('bolge'),
@@ -427,18 +454,19 @@ def api_add_ariza():
             # Son 14 alan
             kordinat_a=data.get('kordinatA', ''),
             kordinat_b=data.get('kordinatB', ''),
-            serivs_etkisi=data.get('etkilenenServisBilgileri', ''),  # H sütunu
+            serivs_etkisi=data.get('serivsEtkisi', ''),  # Eski alan (typo ile)
+            etkilenen_servis_bilgileri=data.get('etkilenenServisBilgileri', ''),  # Yeni alan
             kablo_tipi=data.get('kabloTipi', ''),
             hags_suresi=data.get('hagsSuresi', ''),
             kesinti_suresi=data.get('kesintiSuresi', ''),
             kalici_cozum=data.get('kaliciCozum', ''),
             kullanilan_malzeme=data.get('kullanilanMalzeme', ''),
             aciklama=data.get('aciklama', ''),
-            # Eksik alanlar
             refakat_saglandi_mi=data.get('refakatSaglandiMi', ''),
             deplase_islah_ihtiyaci=data.get('deplaseIslahIhtiyaci', ''),
             hasar_tazmin_sureci=data.get('hasarTazminSureci', ''),
-            otdr_olcum_bilgileri=data.get('otdrOlcumBilgileri', '')
+            otdr_olcum_bilgileri=data.get('otdrOlcumBilgileri', ''),
+            yil=data.get('yil', str(datetime.now().year))
         )
         
         db.session.add(ariza)
@@ -456,40 +484,78 @@ def api_update_ariza(id):
     data = request.get_json()
     ariza = FiberAriza.query.get_or_404(id)
     
-    # SORUN BURADA ÇÖZÜLDÜ: Kendi ID'sini hariç tutuyoruz
+    # Debug için
+    app.logger.info(f"PUT - Gelen veri: {data}")
+    
+    # Kendi ID'sini hariç tutarak kontrol et
     existing = FiberAriza.query.filter(
         FiberAriza.bulten_no == data.get('bultenNo'),
-        FiberAriza.id != id  # Bu satır kritik!
+        FiberAriza.id != id
     ).first()
     
     if existing:
         return jsonify({'error': 'Bu Bülten Numarası ile başka bir kayıt var!'}), 400
 
-    ariza.hafta = data.get('hafta')
-    ariza.bolge = data.get('bolge')
-    ariza.bulten_no = data.get('bultenNo')
-    ariza.il = data.get('il')
-    ariza.guzergah = data.get('guzergah')
-    ariza.kordinat_a = data.get('kordinatA')
-    ariza.kordinat_b = data.get('kordinatB')
-    ariza.ariza_baslangic = datetime.fromisoformat(data.get('baslangicTarihi')) if data.get('baslangicTarihi') else None
-    ariza.ariza_bitis = datetime.fromisoformat(data.get('bitisTarihi')) if data.get('bitisTarihi') else None
-    ariza.kablo_tipi = data.get('kabloTipi')
-    ariza.ariza_kok_neden = data.get('kokNeden')
-    ariza.hags_asildi_mi = data.get('hags')
-    ariza.servis_etkisi = data.get('servisEtkisi')
-    ariza.ariza_suresi = data.get('arizaSuresi')
-    ariza.kalici_cozum = data.get('kaliciCozum')
-    ariza.ariza_konsolide = data.get('arizaKonsolide')
-    ariza.lokasyon = data.get('lokasyon')
-    ariza.refakat_durumu = data.get('refakatDurumu')
-    ariza.hags_suresi = data.get('hagsSuresi')
-    ariza.kesinti_suresi = data.get('kesintiSuresi')
-    ariza.kullanilan_malzeme = data.get('kullanilanMalzeme')
-    ariza.aciklama = data.get('aciklama')
-    ariza.serivs_etkisi = data.get('serivsEtkisi')
-    db.session.commit()
-    return jsonify({'status': 'ok'})
+    try:
+        # İlk 14 alan
+        ariza.hafta = data.get('hafta')
+        ariza.bolge = data.get('bolge')
+        ariza.bulten_no = data.get('bultenNo')
+        ariza.il = data.get('il')
+        ariza.guzergah = data.get('guzergah')
+        ariza.lokasyon = data.get('lokasyon')
+        ariza.ariza_baslangic = parse_utc_date(data.get('baslangicTarihi'))
+        ariza.ariza_bitis = parse_utc_date(data.get('bitisTarihi'))
+        ariza.ariza_konsolide = data.get('arizaKonsolide')
+        ariza.ariza_kok_neden = data.get('kokNeden')
+        ariza.hags_asildi_mi = data.get('hags')
+        ariza.refakat_durumu = data.get('refakatDurumu')
+        ariza.servis_etkisi = data.get('servisEtkisi')
+        ariza.ariza_suresi = data.get('arizaSuresi')
+        
+        # Son 14 alan
+        ariza.kordinat_a = data.get('kordinatA', '')
+        ariza.kordinat_b = data.get('kordinatB', '')
+        ariza.serivs_etkisi = data.get('serivsEtkisi', '')  # Eski alan
+        ariza.etkilenen_servis_bilgileri = data.get('etkilenenServisBilgileri', '')  # Yeni alan
+        ariza.kablo_tipi = data.get('kabloTipi', '')
+        ariza.hags_suresi = data.get('hagsSuresi', '')
+        ariza.kesinti_suresi = data.get('kesintiSuresi', '')
+        ariza.kalici_cozum = data.get('kaliciCozum', '')
+        ariza.kullanilan_malzeme = data.get('kullanilanMalzeme', '')
+        ariza.aciklama = data.get('aciklama', '')
+        ariza.refakat_saglandi_mi = data.get('refakatSaglandiMi', '')
+        ariza.deplase_islah_ihtiyaci = data.get('deplaseIslahIhtiyaci', '')
+        ariza.hasar_tazmin_sureci = data.get('hasarTazminSureci', '')
+        ariza.otdr_olcum_bilgileri = data.get('otdrOlcumBilgileri', '')
+        
+        db.session.commit()
+        return jsonify({'status': 'ok', 'message': 'Güncelleme başarılı'})
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Güncelleme hatası: {str(e)}")
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/filter_data')
+def api_filter_data():
+    """Filtre dropdown'ları için unique değerleri döndür"""
+    try:
+        # Unique bölgeler
+        bolgeler = db.session.query(FiberAriza.bolge).distinct().order_by(FiberAriza.bolge).all()
+        bolgeler = [b[0] for b in bolgeler if b[0]]  # None değerleri filtrele
+        
+        # Unique iller
+        iller = db.session.query(FiberAriza.il).distinct().order_by(FiberAriza.il).all()
+        iller = [i[0] for i in iller if i[0]]  # None değerleri filtrele
+        
+        return jsonify({
+            'bolgeler': bolgeler,
+            'iller': iller
+        })
+    except Exception as e:
+        app.logger.error(f"Filter data hatası: {str(e)}")
+        return jsonify({'bolgeler': [], 'iller': []}), 500
 
 @app.route('/api/ariza/<int:id>', methods=['DELETE'])
 def api_delete_ariza(id):

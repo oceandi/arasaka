@@ -1769,36 +1769,55 @@
             const formData = new FormData(document.getElementById('detailForm'));
             const data = Object.fromEntries(formData);
             
-            data.rowId = document.getElementById('rowId').value;
-            data.baslangicTarihi = data.baslangicTarihi ? new Date(data.baslangicTarihi).toISOString() : '';
-            data.bitisTarihi = data.bitisTarihi ? new Date(data.bitisTarihi).toISOString() : '';
+            // ID'yi al
+            const rowId = document.getElementById('rowId').value;
+            if (rowId) {
+                data.id = rowId;
+            }
+            
+            // Tarihleri düzelt
+            if (data.baslangicTarihi) {
+                data.baslangicTarihi = new Date(data.baslangicTarihi).toISOString();
+            }
+            if (data.bitisTarihi) {
+                data.bitisTarihi = new Date(data.bitisTarihi).toISOString();
+            }
 
             let url = '/api/ariza';
             let method = 'POST';
 
-            if (data.rowId) {
-                url = `/api/ariza/${data.rowId}`;
+            if (data.id) {
+                url = `/api/ariza/${data.id}`;
                 method = 'PUT';
             }
 
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
 
-            if (response.ok) {
-                document.getElementById('statusMessage').innerText = data.rowId ? 'Kayıt güncellendi!' : 'Yeni kayıt eklendi!';
-                document.getElementById('statusMessage').className = 'status-message success';
-                document.getElementById('statusMessage').style.display = 'block';
-                setTimeout(() => {
-                    document.getElementById('statusMessage').style.display = 'none';
-                }, 3000);
-                fetchData();
-                document.getElementById('detail-modal').style.display = 'none';
-            } else {
-                const error = await response.json();
-                document.getElementById('statusMessage').innerText = error.error || 'Kayıt işlemi başarısız!';
+                const responseData = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('statusMessage').innerText = data.id ? 'Kayıt güncellendi!' : 'Yeni kayıt eklendi!';
+                    document.getElementById('statusMessage').className = 'status-message success';
+                    document.getElementById('statusMessage').style.display = 'block';
+                    setTimeout(() => {
+                        document.getElementById('statusMessage').style.display = 'none';
+                    }, 3000);
+                    fetchData();
+                    document.getElementById('detail-modal').style.display = 'none';
+                } else {
+                    document.getElementById('statusMessage').innerText = responseData.error || 'Kayıt işlemi başarısız!';
+                    document.getElementById('statusMessage').className = 'status-message error';
+                    document.getElementById('statusMessage').style.display = 'block';
+                    console.error('Error:', responseData);
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                document.getElementById('statusMessage').innerText = 'Bağlantı hatası!';
                 document.getElementById('statusMessage').className = 'status-message error';
                 document.getElementById('statusMessage').style.display = 'block';
             }
