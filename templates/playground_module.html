@@ -6,6 +6,9 @@
     <title>{{ module.display_name }} - Playground</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
         <style>
         :root {
             --primary-color: #1e3a8a;
@@ -1280,6 +1283,268 @@
         .filtered-out {
             display: none;
         }
+
+        /* Select2 Dark Theme Customization */
+        .select2-container--default .select2-selection--single,
+        .select2-container--default .select2-selection--multiple {
+            background-color: var(--content-bg) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 4px !important;
+            color: var(--text-color) !important;
+            min-height: 32px !important;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: var(--accent-color) !important;
+            border: 1px solid var(--accent-color) !important;
+            color: white !important;
+            border-radius: 3px !important;
+            padding: 2px 8px !important;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+            color: white !important;
+            margin-right: 5px !important;
+        }
+
+        .select2-dropdown {
+            background-color: var(--content-bg) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 4px !important;
+        }
+
+        .select2-container--default .select2-results__option {
+            background-color: var(--content-bg) !important;
+            color: var(--text-color) !important;
+            padding: 8px 12px !important;
+        }
+
+        .select2-container--default .select2-results__option--highlighted {
+            background-color: var(--accent-color) !important;
+            color: white !important;
+        }
+
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+            background-color: var(--content-bg) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-color) !important;
+            border-radius: 4px !important;
+            padding: 8px 12px !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: var(--text-color) !important;
+            line-height: 30px !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 30px !important;
+        }
+
+        .select2-container {
+            width: 100% !important;
+        }
+
+        /* Select filtreleri için özel stil */
+        .column-filter-select {
+            width: 100% !important;
+            min-width: 120px;
+            background-color: var(--content-bg) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-color) !important;
+            border-radius: 4px !important;
+            font-size: 12px !important;
+        }
+
+        /* Select2 container boyutları */
+        .filter-row .select2-container {
+            width: 100% !important;
+            min-width: 120px !important;
+        }
+
+        .filter-row .select2-selection--multiple {
+            min-height: 28px !important;
+            padding: 2px !important;
+        }
+
+        /* Excel tarzı filtre stilleri */
+        .filterable-header {
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .filter-icon {
+            opacity: 0.3;
+            margin-left: 5px;
+            font-size: 12px;
+        }
+
+        .filterable-header:hover .filter-icon {
+            opacity: 0.7;
+        }
+
+        .filterable-header.filtered .filter-icon {
+            opacity: 1;
+            color: var(--accent-color);
+        }
+
+        /* Dropdown filter */
+        .filter-dropdown {
+            position: fixed; /* absolute yerine fixed */
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            z-index: 9999;
+            min-width: 280px; /* Daha geniş */
+            max-width: 400px;
+            max-height: 500px; /* Daha yüksek */
+            overflow: visible;
+            display: none;
+        }
+
+        /* Search alanını büyüt */
+        .filter-search {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--content-bg);
+            border-radius: 8px 8px 0 0;
+        }
+
+        .filter-search input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-color);
+            border-radius: 6px;
+            font-size: 14px; /* Daha büyük font */
+        }
+
+        /* Options alanını büyüt */
+        .filter-options {
+            max-height: 300px; /* Daha yüksek scroll alanı */
+            overflow-y: auto;
+            padding: 5px 0;
+        }
+
+        .filter-option {
+            padding: 8px 15px; /* Daha büyük padding */
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 14px; /* Daha büyük font */
+            transition: background 0.2s;
+        }
+
+        .filter-option:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .filter-option input[type="checkbox"] {
+            margin-right: 10px;
+            width: 16px; /* Daha büyük checkbox */
+            height: 16px;
+            accent-color: var(--accent-color);
+        }
+
+        /* Action butonlarını büyüt */
+        .filter-actions {
+            padding: 12px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 8px;
+            background: var(--content-bg);
+            border-radius: 0 0 8px 8px;
+        }
+
+        .filter-actions button {
+            padding: 8px 16px; /* Daha büyük butonlar */
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            flex: 1; /* Eşit genişlik */
+        }
+
+        /* Scroll bar styling */
+        .filter-options::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .filter-options::-webkit-scrollbar-track {
+            background: var(--content-bg);
+            border-radius: 4px;
+        }
+
+        .filter-options::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .filter-options::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-color);
+        }
+
+        .btn-select-all {
+            background: var(--accent-color) !important;
+            color: white !important;
+        }
+
+        .btn-clear-filter {
+            background: var(--warning-color) !important;
+            color: white !important;
+        }
+
+        .filter-actions button {
+            padding: 4px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+
+        .filter-actions button:hover {
+            opacity: 0.8;
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 768px) {
+            .filter-dropdown {
+                position: fixed;
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%);
+                min-width: 90vw;
+                max-width: 90vw;
+                max-height: 80vh;
+            }
+            
+            .filter-option {
+                padding: 12px 15px; /* Mobile'da daha büyük touch area */
+            }
+            
+            .filter-option input[type="checkbox"] {
+                width: 20px;
+                height: 20px;
+            }
+        }
+
+        /* Backdrop overlay mobile için */
+        .filter-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.3);
+            z-index: 9998;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -1318,38 +1583,21 @@
             
             <div class="table-wrapper">
                 <table id="dataTable">
+                    <!-- Table header'ı güncelleyin -->
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th class="filterable-header" data-field="id">
+                                ID <i class="fas fa-filter filter-icon"></i>
+                            </th>
                             {% for field in module.fields %}
-                            <th>{{ field.name }}</th>
+                            <th class="filterable-header" data-field="{{ field.name }}">
+                                {{ field.name }} <i class="fas fa-filter filter-icon"></i>
+                            </th>
                             {% endfor %}
-                            <th>Oluşturulma</th>
+                            <th class="filterable-header" data-field="created_at">
+                                Oluşturulma <i class="fas fa-filter filter-icon"></i>
+                            </th>
                             <th>İşlemler</th>
-                        </tr>
-                        <!-- Filtre satırı -->
-                        <tr class="filter-row">
-                            <th><input type="text" class="column-filter" data-field="id" placeholder="ID ara..."></th>
-                            {% for field in module.fields %}
-                            <th>
-                                {% if field.type == 'select' and field.options %}
-                                <select class="column-filter" data-field="{{ field.name }}">
-                                    <option value="">Tümü</option>
-                                    {% for option in field.options %}
-                                    <option value="{{ option }}">{{ option }}</option>
-                                    {% endfor %}
-                                </select>
-                                {% else %}
-                                <input type="text" class="column-filter" data-field="{{ field.name }}" placeholder="Ara...">
-                                {% endif %}
-                            </th>
-                            {% endfor %}
-                            <th><input type="text" class="column-filter" data-field="created_at" placeholder="Tarih ara..."></th>
-                            <th>
-                                <button class="btn btn-sm" onclick="clearFilters()" title="Filtreleri Temizle">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -1457,6 +1705,8 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 const moduleEl = document.getElementById('module');
 const moduleName = moduleEl.getAttribute('data-name');
@@ -1471,7 +1721,9 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadData() {
     const response = await fetch(`/api/playground/${moduleName}/data`);
     currentData = await response.json();
+    allData = [...currentData];
     renderTable();
+    setupFilters(); // Bu satırı ekleyin
 }
 
 function renderTable() {
@@ -1844,41 +2096,76 @@ async function loadData() {
 
 // Filtreleri kur
 function setupFilters() {
+    // Normal input filtreleri
     const filterInputs = document.querySelectorAll('.column-filter');
     
     filterInputs.forEach(input => {
-        // Debounce için timeout
         let timeoutId;
         
         input.addEventListener('input', function() {
             clearTimeout(timeoutId);
             timeoutId = setTimeout(() => {
                 applyFilters();
-            }, 300); // 300ms bekle
-        });
-        
-        input.addEventListener('change', function() {
-            applyFilters();
+            }, 300);
         });
     });
+    
+    // Select2 filtreleri - jQuery ile
+    setTimeout(() => {
+        $('.column-filter-select').each(function() {
+            $(this).select2({
+                placeholder: 'Seçiniz...',
+                allowClear: true,
+                closeOnSelect: false,
+                width: '100%',
+                dropdownParent: $('body'),
+                language: {
+                    noResults: function() {
+                        return "Sonuç bulunamadı";
+                    },
+                    searching: function() {
+                        return "Aranıyor...";
+                    }
+                }
+            }).on('change', function() {
+                applyFilters();
+            });
+        });
+    }, 100); // Kısa bir gecikme ile başlat
 }
+
 
 // Filtreleri uygula
 function applyFilters() {
     const filters = {};
     
-    // Tüm filtre değerlerini topla
+    // Normal input filtreleri
     document.querySelectorAll('.column-filter').forEach(filter => {
         const field = filter.getAttribute('data-field');
         const value = filter.value.trim().toLowerCase();
         if (value) {
-            filters[field] = value;
+            filters[field] = {
+                type: 'text',
+                value: value
+            };
+        }
+    });
+    
+    // Select filtreleri
+    document.querySelectorAll('.column-filter-select').forEach(filter => {
+        const field = filter.getAttribute('data-field');
+        const selectedValues = Array.from(filter.selectedOptions).map(option => option.value);
+        if (selectedValues.length > 0) {
+            filters[field] = {
+                type: 'select',
+                values: selectedValues
+            };
         }
     });
     
     // Verileri filtrele
     currentData = allData.filter(record => {
-        for (const [field, filterValue] of Object.entries(filters)) {
+        for (const [field, filterData] of Object.entries(filters)) {
             let recordValue = '';
             
             if (field === 'id') {
@@ -1889,28 +2176,35 @@ function applyFilters() {
                 recordValue = String(record[field] || '');
             }
             
-            recordValue = recordValue.toLowerCase();
-            
-            // Eşleşme kontrolü
-            if (!recordValue.includes(filterValue)) {
-                return false;
+            // Filtre tipine göre kontrol
+            if (filterData.type === 'text') {
+                recordValue = recordValue.toLowerCase();
+                if (!recordValue.includes(filterData.value)) {
+                    return false;
+                }
+            } else if (filterData.type === 'select') {
+                if (!filterData.values.includes(recordValue)) {
+                    return false;
+                }
             }
         }
         return true;
     });
     
-    // Tabloyu yeniden çiz
     renderTable();
-    
-    // Filtre durumunu göster
     updateFilterStatus();
 }
 
 // Filtreleri temizle
 function clearFilters() {
+    // Normal inputları temizle
     document.querySelectorAll('.column-filter').forEach(filter => {
         filter.value = '';
     });
+    
+    // Select2'leri temizle
+    $('.column-filter-select').val(null).trigger('change');
+    
     currentData = [...allData];
     renderTable();
     updateFilterStatus();
@@ -2003,6 +2297,315 @@ function numericFilter(recordValue, filterValue) {
         return parseFloat(recordValue) === parseFloat(filterValue.substring(1));
     }
     return recordValue.includes(filterValue);
+}
+
+// Sayfa yüklendiğinde jQuery ile Select2'yi başlat
+$(document).ready(function() {
+    // Select2 başlatılması setupFilters() içinde yapılıyor
+    console.log('Select2 hazır');
+});
+
+// Excel tarzı filtreleme JavaScript'i
+let activeFilters = {};
+let currentDropdown = null;
+
+// Header click event'leri
+function setupExcelFilters() {
+    document.querySelectorAll('.filterable-header').forEach(header => {
+        header.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const field = this.getAttribute('data-field');
+            showFilterDropdown(this, field);
+        });
+    });
+    
+    // Document click ile dropdown'ları kapat
+    document.addEventListener('click', function() {
+        closeAllDropdowns();
+    });
+}
+
+// Filter dropdown göster
+function showFilterDropdown(headerElement, field) {
+    // Toggle özelliği
+    if (currentDropdown && currentDropdown.parentElement === headerElement) {
+        closeAllDropdowns();
+        return;
+    }
+    
+    closeAllDropdowns();
+    
+    // Unique değerleri topla
+    const uniqueValues = [...new Set(allData.map(record => {
+        if (field === 'id') return String(record.id);
+        if (field === 'created_at') return new Date(record.created_at).toLocaleDateString('tr-TR');
+        return String(record[field] || '');
+    }))].filter(v => v !== 'null' && v !== 'undefined' && v !== '').sort();
+
+    if (window.innerWidth <= 768) {
+        const backdrop = document.createElement('div');
+        backdrop.className = 'filter-backdrop';
+        backdrop.addEventListener('click', closeAllDropdowns);
+        document.body.appendChild(backdrop);
+        backdrop.style.display = 'block';
+    }
+    
+    // Dropdown oluştur
+    const dropdown = document.createElement('div');
+    dropdown.className = 'filter-dropdown';
+    dropdown.innerHTML = `
+        <div class="filter-search">
+            <input type="text" placeholder="🔍 ${field} içinde ara..." class="filter-search-input">
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
+                Toplam ${uniqueValues.length} benzersiz değer
+            </div>
+        </div>
+        <div class="filter-actions">
+            <button class="btn-select-all">Tümünü Seç</button>
+            <button class="btn-clear-filter">Filtreyi Kaldır</button>
+        </div>
+        <div class="filter-options">
+            ${uniqueValues.map(value => `
+                <div class="filter-option">
+                    <input type="checkbox" value="${value}" id="filter_${field}_${value}"
+                           ${!activeFilters[field] || activeFilters[field].includes(value) ? 'checked' : ''}>
+                    <label for="filter_${field}_${value}">${value}</label>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    // Dropdown'ı body'e ekle (position: fixed için)
+    document.body.appendChild(dropdown);
+    
+    // Pozisyonu hesapla
+    positionDropdown(dropdown, headerElement);
+    
+    dropdown.style.display = 'block';
+    currentDropdown = dropdown;
+    
+    // Event listeners
+    setupDropdownEvents(dropdown, field);
+    
+    // Search input'a odaklan
+    setTimeout(() => {
+        dropdown.querySelector('.filter-search-input').focus();
+    }, 100);
+}
+
+function positionDropdown(dropdown, headerElement) {
+    const headerRect = headerElement.getBoundingClientRect();
+    const dropdownRect = dropdown.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    let left = headerRect.left;
+    let top = headerRect.bottom + 5;
+    
+    // Sağa taşma kontrolü
+    if (left + 280 > viewportWidth) {
+        left = viewportWidth - 290; // 10px margin
+    }
+    
+    // Sol tarafta kalma kontrolü
+    if (left < 10) {
+        left = 10;
+    }
+    
+    // Aşağı taşma kontrolü
+    if (top + 400 > viewportHeight) {
+        top = headerRect.top - 410; // Yukarıda aç
+        
+        // Yukarıda da yer yoksa viewport'un ortasında aç
+        if (top < 10) {
+            top = (viewportHeight - 400) / 2;
+        }
+    }
+    
+    dropdown.style.left = left + 'px';
+    dropdown.style.top = top + 'px';
+}
+
+// Dropdown event'leri
+function setupDropdownEvents(dropdown, field) {
+    const searchInput = dropdown.querySelector('.filter-search-input');
+    const selectAllBtn = dropdown.querySelector('.btn-select-all');
+    const clearBtn = dropdown.querySelector('.btn-clear-filter');
+    const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
+    
+    // Buton durumunu güncelle
+    function updateSelectAllButton() {
+        const visibleCheckboxes = Array.from(checkboxes).filter(cb => 
+            cb.closest('.filter-option').style.display !== 'none'
+        );
+        const checkedCount = visibleCheckboxes.filter(cb => cb.checked).length;
+        
+        if (checkedCount === visibleCheckboxes.length && visibleCheckboxes.length > 0) {
+            selectAllBtn.textContent = 'Tümünü Kaldır';
+            selectAllBtn.className = 'btn-clear-filter';
+        } else {
+            selectAllBtn.textContent = 'Tümünü Seç';
+            selectAllBtn.className = 'btn-select-all';
+        }
+    }
+    
+    // İlk durumu ayarla
+    updateSelectAllButton();
+    
+    // Arama
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        dropdown.querySelectorAll('.filter-option').forEach(option => {
+            const text = option.querySelector('span').textContent.toLowerCase();
+            option.style.display = text.includes(searchTerm) ? 'flex' : 'none';
+        });
+        updateSelectAllButton(); // Arama sonrası buton durumunu güncelle
+    });
+    
+    // Tümünü seç/kaldır (toggle)
+    selectAllBtn.addEventListener('click', function() {
+        const visibleCheckboxes = Array.from(checkboxes).filter(cb => 
+            cb.closest('.filter-option').style.display !== 'none'
+        );
+        const checkedCount = visibleCheckboxes.filter(cb => cb.checked).length;
+        
+        // Toggle mantığı
+        const shouldCheck = checkedCount !== visibleCheckboxes.length;
+        
+        visibleCheckboxes.forEach(cb => {
+            cb.checked = shouldCheck;
+        });
+        
+        updateSelectAllButton();
+        applyExcelFilter(field, dropdown);
+    });
+    
+    // Temizle (tüm filtreyi kaldır)
+    clearBtn.addEventListener('click', function() {
+        delete activeFilters[field];
+        const header = dropdown.parentElement;
+        header.classList.remove('filtered');
+        closeAllDropdowns();
+        applyAllFilters();
+    });
+    
+    // Checkbox değişiklikleri
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateSelectAllButton();
+            applyExcelFilter(field, dropdown);
+        });
+    });
+    
+    // Dropdown içi tıklamalarda kapanmayı engelle
+    dropdown.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+
+    dropdown.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeAllDropdowns();
+        }
+        
+        if (e.key === 'Enter' && e.target.type === 'checkbox') {
+            e.target.checked = !e.target.checked;
+            updateSelectAllButton();
+            applyExcelFilter(field, dropdown);
+        }
+    });
+}
+
+// Excel filter uygula
+function applyExcelFilter(field, dropdown) {
+    const selectedValues = Array.from(dropdown.querySelectorAll('input[type="checkbox"]:checked'))
+        .map(cb => cb.value);
+    
+    const totalValues = dropdown.querySelectorAll('input[type="checkbox"]').length;
+    
+    if (selectedValues.length === 0) {
+        delete activeFilters[field];
+    } else {
+        activeFilters[field] = selectedValues;
+    }
+    
+    // Header'a filtered class ve sayaç ekle
+    const header = dropdown.parentElement;
+    const existingBadge = header.querySelector('.filter-badge');
+    if (existingBadge) existingBadge.remove();
+    
+    if (activeFilters[field] && selectedValues.length < totalValues) {
+        header.classList.add('filtered');
+        
+        // Sayaç badge ekle
+        const badge = document.createElement('span');
+        badge.className = 'filter-badge';
+        badge.style.cssText = `
+            background: var(--accent-color);
+            color: white;
+            border-radius: 10px;
+            padding: 1px 6px;
+            font-size: 10px;
+            margin-left: 3px;
+        `;
+        badge.textContent = selectedValues.length;
+        header.appendChild(badge);
+    } else {
+        header.classList.remove('filtered');
+    }
+    
+    applyAllFilters();
+}
+
+// Tüm filtreleri uygula
+function applyAllFilters() {
+    currentData = allData.filter(record => {
+        for (const [field, selectedValues] of Object.entries(activeFilters)) {
+            let recordValue = '';
+            
+            if (field === 'id') {
+                recordValue = String(record.id);
+            } else if (field === 'created_at') {
+                recordValue = new Date(record.created_at).toLocaleDateString('tr-TR');
+            } else {
+                recordValue = String(record[field] || '');
+            }
+            
+            if (!selectedValues.includes(recordValue)) {
+                return false;
+            }
+        }
+        return true;
+    });
+    
+    renderTable();
+    updateFilterStatus();
+}
+
+// Dropdown'ları kapat
+function closeAllDropdowns() {
+    if (currentDropdown) {
+        if (currentDropdown.parentElement === document.body) {
+            document.body.removeChild(currentDropdown);
+        } else {
+            currentDropdown.remove();
+        }
+        currentDropdown = null;
+    }
+    
+    // Backdrop'ı da kaldır
+    const backdrop = document.querySelector('.filter-backdrop');
+    if (backdrop) {
+        document.body.removeChild(backdrop);
+    }
+}
+
+// loadData fonksiyonunu güncelleyin
+async function loadData() {
+    const response = await fetch(`/api/playground/${moduleName}/data`);
+    currentData = await response.json();
+    allData = [...currentData];
+    renderTable();
+    setupExcelFilters(); // Bu satırı ekleyin
 }
 </script>
 </body>
