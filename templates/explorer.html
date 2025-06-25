@@ -905,6 +905,116 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
+
+        /* Excel tarzı filtre stilleri */
+        .filterable-header {
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .filter-icon {
+            opacity: 0.3;
+            margin-left: 5px;
+            font-size: 12px;
+        }
+
+        .filterable-header:hover .filter-icon {
+            opacity: 0.7;
+        }
+
+        .filterable-header.filtered .filter-icon {
+            opacity: 1;
+            color: var(--accent-color);
+        }
+
+        /* Dropdown filter */
+        .filter-dropdown {
+            position: fixed;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            z-index: 9999;
+            min-width: 280px;
+            max-width: 400px;
+            max-height: 500px;
+            overflow: visible;
+            display: none;
+        }
+
+        .filter-search {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--content-bg);
+            border-radius: 8px 8px 0 0;
+        }
+
+        .filter-search input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-color);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .filter-options {
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 5px 0;
+        }
+
+        .filter-option {
+            padding: 8px 15px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .filter-option:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .filter-option input[type="checkbox"] {
+            margin-right: 10px;
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent-color);
+        }
+
+        .filter-actions {
+            padding: 12px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 8px;
+            background: var(--content-bg);
+            border-radius: 0 0 8px 8px;
+        }
+
+        .filter-actions button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            flex: 1;
+        }
+
+        .btn-select-all {
+            background: var(--accent-color) !important;
+            color: white !important;
+        }
+
+        .btn-clear-filter {
+            background: var(--warning-color) !important;
+            color: white !important;
+        }
     </style>
 </head>
 <body>
@@ -1143,21 +1253,48 @@
                     <table id="dataTable">
                         <thead>
                             <tr>
-                                <th style="width: 30px;"></th>
-                                <!-- Sadece Input Verileri (İlk 14 Sütun) -->
-                                <th>Hafta</th>
-                                <th>Bölge</th>
-                                <th>Bülten Numarası</th>
-                                <th>İL</th>
-                                <th>Güzergah</th>
-                                <th>Lokasyon</th>
-                                <th>Arıza Başlangıç</th>
-                                <th>Arıza Bitiş</th>
-                                <th>Kök Neden</th>
-                                <th>HAGS Aşıldı mı</th>
-                                <th>Refakat Durumu</th>
-                                <th>Servis Etkisi</th>
-                                <th>Arıza Süresi</th>
+                                <th class="filterable-header" data-field="expand">
+                                    <span class="expand-toggle"></span>
+                                </th>
+                                <th class="filterable-header" data-field="hafta">
+                                    Hafta <i class="fas fa-filter filter-icon"></i>
+                                </th>
+                                <th class="filterable-header" data-field="bolge">
+                                    Bölge <i class="fas fa-filter filter-icon"></i>
+                                </th>
+                                <th class="filterable-header" data-field="bultenNo">
+                                    Bülten Numarası <i class="fas fa-filter filter-icon"></i>
+                                </th>
+                                <th class="filterable-header" data-field="il">
+                                    İL <i class="fas fa-filter filter-icon"></i>
+                                </th>
+                                <th class="filterable-header" data-field="guzergah">
+                                    Güzergah <i class="fas fa-filter filter-icon"></i>
+                                </th>
+                                <th class="filterable-header" data-field="lokasyon">
+                                    Lokasyon <i class="fas fa-filter filter-icon"></i>
+                                </th>
+                                <th class="filterable-header" data-field="arizaBaslangic">
+                                    Arıza Başlangıç <i class="fas fa-filter filter-icon"></i>
+                                </th>
+                                <th class="filterable-header" data-field="arizaBitis">
+                                    Arıza Bitiş <i class="fas fa-filter filter-icon"></i>
+                                </th>
+                                <th class="filterable-header" data-field="arizaKokNeden">
+                                    Kök Neden <i class="fas fa-filter filter-icon"></i>
+                                </th>
+                                <th class="filterable-header" data-field="hagsAsildi">
+                                    HAGS Aşıldı mı <i class="fas fa-filter filter-icon"></i>
+                                </th>
+                                <th class="filterable-header" data-field="refakatDurumu">
+                                    Refakat Durumu <i class="fas fa-filter filter-icon"></i>
+                                </th>
+                                <th class="filterable-header" data-field="servisEtkisi">
+                                    Servis Etkisi <i class="fas fa-filter filter-icon"></i>
+                                </th>
+                                <th class="filterable-header" data-field="arizaSuresi">
+                                    Arıza Süresi <i class="fas fa-filter filter-icon"></i>
+                                </th>
                                 <th>İşlemler</th>
                             </tr>
                         </thead>
@@ -2123,7 +2260,223 @@
             }
         }
 
+        // Excel tarzı filtreleme JavaScript'i
+        let activeFilters = {};
+        let currentDropdown = null;
 
+        // Header click event'leri
+        function setupExcelFilters() {
+            document.querySelectorAll('.filterable-header').forEach(header => {
+                const field = header.getAttribute('data-field');
+                if (field && field !== 'expand') { // Expand kolonunu hariç tut
+                    header.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        showFilterDropdown(this, field);
+                    });
+                }
+            });
+            
+            // Document click ile dropdown'ları kapat
+            document.addEventListener('click', function() {
+                closeAllDropdowns();
+            });
+        }
+
+        // Filter dropdown göster
+        function showFilterDropdown(headerElement, field) {
+            // Toggle özelliği
+            if (currentDropdown && currentDropdown.parentElement === headerElement) {
+                closeAllDropdowns();
+                return;
+            }
+            
+            closeAllDropdowns();
+            
+            // Unique değerleri topla
+            const uniqueValues = [...new Set(filteredData.map(record => {
+                let value = record[field];
+                
+                // Tarih alanları için formatla
+                if (field === 'arizaBaslangic' || field === 'arizaBitis') {
+                    value = value ? new Date(value).toLocaleDateString('tr-TR') : '';
+                }
+                
+                return String(value || '');
+            }))].filter(v => v !== 'null' && v !== 'undefined' && v !== '').sort();
+            
+            // Dropdown oluştur
+            const dropdown = document.createElement('div');
+            dropdown.className = 'filter-dropdown';
+            dropdown.innerHTML = `
+                <div class="filter-search">
+                    <input type="text" placeholder="🔍 ${field} içinde ara..." class="filter-search-input">
+                    <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
+                        Toplam ${uniqueValues.length} benzersiz değer
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button class="btn-select-all">Tümünü Seç</button>
+                    <button class="btn-clear-filter">Filtreyi Kaldır</button>
+                </div>
+                <div class="filter-options">
+                    ${uniqueValues.map(value => `
+                        <div class="filter-option">
+                            <input type="checkbox" value="${value}" 
+                                ${!activeFilters[field] || activeFilters[field].includes(value) ? 'checked' : ''}>
+                            <label>${value}</label>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            // Dropdown'ı body'e ekle
+            document.body.appendChild(dropdown);
+            
+            // Pozisyonu hesapla
+            positionDropdown(dropdown, headerElement);
+            
+            dropdown.style.display = 'block';
+            currentDropdown = dropdown;
+            
+            // Event listeners
+            setupDropdownEvents(dropdown, field);
+        }
+
+        function positionDropdown(dropdown, headerElement) {
+            const headerRect = headerElement.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let left = headerRect.left;
+            let top = headerRect.bottom + 5;
+            
+            // Viewport taşma kontrolü
+            if (left + 280 > viewportWidth) {
+                left = viewportWidth - 290;
+            }
+            if (left < 10) {
+                left = 10;
+            }
+            if (top + 400 > viewportHeight) {
+                top = headerRect.top - 410;
+                if (top < 10) {
+                    top = (viewportHeight - 400) / 2;
+                }
+            }
+            
+            dropdown.style.left = left + 'px';
+            dropdown.style.top = top + 'px';
+        }
+
+        function setupDropdownEvents(dropdown, field) {
+            const searchInput = dropdown.querySelector('.filter-search-input');
+            const selectAllBtn = dropdown.querySelector('.btn-select-all');
+            const clearBtn = dropdown.querySelector('.btn-clear-filter');
+            const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
+            
+            // Arama
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                dropdown.querySelectorAll('.filter-option').forEach(option => {
+                    const text = option.querySelector('label').textContent.toLowerCase();
+                    option.style.display = text.includes(searchTerm) ? 'flex' : 'none';
+                });
+            });
+            
+            // Tümünü seç/kaldır
+            selectAllBtn.addEventListener('click', function() {
+                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                checkboxes.forEach(cb => cb.checked = !allChecked);
+                applyExcelFilter(field, dropdown);
+            });
+            
+            // Filtreyi kaldır
+            clearBtn.addEventListener('click', function() {
+                delete activeFilters[field];
+                headerElement.classList.remove('filtered');
+                closeAllDropdowns();
+                applyAllFilters();
+            });
+            
+            // Checkbox değişiklikleri
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    applyExcelFilter(field, dropdown);
+                });
+            });
+            
+            dropdown.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        }
+
+        function applyExcelFilter(field, dropdown) {
+            const selectedValues = Array.from(dropdown.querySelectorAll('input[type="checkbox"]:checked'))
+                .map(cb => cb.value);
+            
+            if (selectedValues.length === 0) {
+                delete activeFilters[field];
+            } else {
+                activeFilters[field] = selectedValues;
+            }
+            
+            // Header'a filtered class ekle
+            const header = dropdown.parentElement;
+            if (activeFilters[field]) {
+                header.classList.add('filtered');
+            } else {
+                header.classList.remove('filtered');
+            }
+            
+            applyAllFilters();
+        }
+
+        function applyAllFilters() {
+            filteredData = sampleData.filter(record => {
+                for (const [field, selectedValues] of Object.entries(activeFilters)) {
+                    let recordValue = String(record[field] || '');
+                    
+                    // Tarih alanları için formatla
+                    if (field === 'arizaBaslangic' || field === 'arizaBitis') {
+                        recordValue = record[field] ? new Date(record[field]).toLocaleDateString('tr-TR') : '';
+                    }
+                    
+                    if (!selectedValues.includes(recordValue)) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+            
+            currentPage = 1;
+            updateDashboardStats();
+            renderTable();
+            updateCharts();
+        }
+
+        function closeAllDropdowns() {
+            if (currentDropdown) {
+                if (currentDropdown.parentElement === document.body) {
+                    document.body.removeChild(currentDropdown);
+                } else {
+                    currentDropdown.remove();
+                }
+                currentDropdown = null;
+            }
+        }
+
+        // fetchData fonksiyonunu güncelleyin
+        async function fetchData() {
+            const response = await fetch('/api/arizalar');
+            sampleData = await response.json();
+            filteredData = [...sampleData];
+            updateDashboardStats();
+            renderTable();
+            updateCharts();
+            updateLastTime();
+            setupExcelFilters(); // Bu satırı ekleyin
+            if (map) loadMapData();
+        }
     </script>
 </body>
 </html>

@@ -751,35 +751,43 @@ def api_map_data():
 # Excel Export fonksiyonu (tüm data)
 @app.route('/export_excel_all')
 def export_excel_all():
-    """Tüm verileri Excel olarak export et"""
+    """Tüm verileri Excel olarak export et - TÜM 28 ALAN"""
     arizalar = FiberAriza.query.all()
     
     data = []
     for ariza in arizalar:
         data.append({
+            # İlk 14 alan - Input verileri
             'Hafta': ariza.hafta,
             'Bölge': ariza.bolge,
             'Bülten Numarası': ariza.bulten_no,
             'İl': ariza.il,
             'Güzergah': ariza.guzergah,
-            'KORDİNAT A': ariza.kordinat_a,
-            'KORDİNAT B': ariza.kordinat_b,
-            'ETKİLENEN SERVİS BİLGİLERİ': ariza.serivs_etkisi,
             'Lokasyon': ariza.lokasyon,
             'Arıza Başlangıç': ariza.ariza_baslangic.strftime('%d %B %Y %H:%M:%S') if ariza.ariza_baslangic else '',
             'Arıza Bitiş': ariza.ariza_bitis.strftime('%d %B %Y %H:%M:%S') if ariza.ariza_bitis else '',
-            'KABLO TİPİ': ariza.kablo_tipi,
-            'HAGS SÜRESİ': ariza.hags_suresi,
-            'KESİNTİ SÜRESİ': ariza.kesinti_suresi,
             'Arıza Konsolide Kök Neden': ariza.ariza_konsolide,
             'Arıza Kök Neden': ariza.ariza_kok_neden,
             'HAGS Aşıldı mı?': ariza.hags_asildi_mi,
             'Refakat Durumu': ariza.refakat_durumu,
             'Servis Etkisi': ariza.servis_etkisi,
             'Arıza Süresi': ariza.ariza_suresi,
+            
+            # Son 14 alan - Düzenlenebilir alanlar
+            'KORDİNAT A': ariza.kordinat_a,
+            'KORDİNAT B': ariza.kordinat_b,
+            'ETKİLENEN SERVİS BİLGİLERİ': ariza.etkilenen_servis_bilgileri,
+            'KABLO TİPİ': ariza.kablo_tipi,
+            'HAGS SÜRESİ': ariza.hags_suresi,
+            'KESİNTİ SÜRESİ': ariza.kesinti_suresi,
             'KALICI ÇÖZÜM SAĞLANDI': ariza.kalici_cozum,
             'KULLANILAN MALZEME': ariza.kullanilan_malzeme,
-            'AÇIKLAMA': ariza.aciklama
+            'AÇIKLAMA': ariza.aciklama,
+            'Refakat Sağlandı mı?': ariza.refakat_saglandi_mi,
+            'Deplase Islah İhtiyacı var mı': ariza.deplase_islah_ihtiyaci,
+            'Hasar Tazmin Süreci': ariza.hasar_tazmin_sureci,
+            'OTDR Ölçüm Bilgileri': ariza.otdr_olcum_bilgileri,
+            'YIL': ariza.yil or str(datetime.now().year)
         })
     
     df = pd.DataFrame(data)
@@ -792,7 +800,7 @@ def export_excel_all():
         worksheet = writer.sheets['Fiber Arızalar']
         for i, col in enumerate(df.columns):
             column_width = max(df[col].astype(str).map(len).max(), len(col)) + 2
-            worksheet.set_column(i, i, column_width)
+            worksheet.set_column(i, i, min(column_width, 50))  # Max 50 karakter
     
     output.seek(0)
     
@@ -800,7 +808,7 @@ def export_excel_all():
         output,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
-        download_name=f'fiber_arizalar_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+        download_name=f'fiber_arizalar_tam_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
     )
 
 @app.route('/export_excel_custom', methods=['POST'])
