@@ -125,6 +125,24 @@ def parse_utc_date(date_string):
     except:
         return datetime.fromisoformat(date_string)
 
+@app.route('/api/ariza/delete_all', methods=['DELETE'])
+def api_delete_all_arizalar():
+    try:
+        # Güvenlik için toplam kayıt sayısını kontrol et
+        total = FiberAriza.query.count()
+        
+        # Tüm kayıtları sil
+        FiberAriza.query.delete()
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'ok', 
+            'message': f'{total} kayıt başarıyla silindi'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
 @app.route('/')
 def home():
     return redirect(url_for('browse'))
