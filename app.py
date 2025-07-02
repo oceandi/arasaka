@@ -1864,4 +1864,26 @@ def admin_delete_user(user_id):
     return redirect(url_for('admin_users'))
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    import os
+    
+    # Production mode check
+    is_production = os.getenv('FLASK_ENV') == 'production'
+    
+    if is_production:
+        # Production SSL setup
+        ssl_context = None
+        cert_path = os.getenv('SSL_CERT_PATH')
+        key_path = os.getenv('SSL_KEY_PATH')
+        
+        if cert_path and key_path:
+            ssl_context = (cert_path, key_path)
+        
+        app.run(
+            debug=False,
+            host='0.0.0.0',
+            port=int(os.getenv('PORT', 443)),
+            ssl_context=ssl_context
+        )
+    else:
+        # Development mode
+        app.run(debug=True, host='127.0.0.1', port=5001)
