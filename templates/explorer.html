@@ -72,6 +72,65 @@ body {
     letter-spacing: 1px;
 }
 
+.user-section {
+    padding: 0 20px 20px;
+    border-top: 1px solid var(--border-color);
+    margin-top: auto;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 0;
+    color: var(--text-color);
+}
+
+.user-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.user-details h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.user-details p {
+    font-size: 11px;
+    color: var(--accent-color);
+}
+
+.logout-btn {
+    width: 100%;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    padding: 8px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.3s ease;
+    display: block;
+    margin-top: 10px;
+}
+
+.logout-btn:hover {
+    background: #ef4444;
+    color: white;
+}
+
 .menu {
     flex: 1;
 }
@@ -1087,7 +1146,25 @@ tbody tr:hover {
                 <li><a href="#" onclick="showMapView()"><i class="fas fa-map-marked-alt"></i> Harita Görünümü</a></li>
                 <li><a href="#" onclick="toggleAIWidget()"><i class="fas fa-robot"></i> AI Asistan</a></li>
                 <li><a href="/playground"><i class="fas fa-puzzle-piece"></i> Playground</a></li>
+                {% if current_user.is_admin() %}
+                <li><a href="/admin"><i class="fas fa-shield-alt"></i> Admin Panel</a></li>
+                {% endif %}
             </ul>
+        </div>
+        
+        <div class="user-section">
+            <div class="user-info">
+                <div class="user-avatar">
+                    {{ current_user.username[0].upper() }}
+                </div>
+                <div class="user-details">
+                    <h4>{{ current_user.username }}</h4>
+                    <p>{{ current_user.role.replace('_', ' ').title() }}</p>
+                </div>
+            </div>
+            <a href="{{ url_for('logout') }}" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Çıkış Yap
+            </a>
         </div>
     </div>
     <div class="content">

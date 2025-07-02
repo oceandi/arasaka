@@ -13,6 +13,11 @@ import requests
 from ai_config import AI_CONFIG
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import func
+from logging_config import setup_logging, log_request_response, log_database_operation, log_file_operation, log_user_action
+import logging
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 
 # Türkçe locale ayarla
 try:
@@ -31,6 +36,16 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///fiberariza.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+
+# Setup logging
+logger = setup_logging(app)
+
+# Setup Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+login_manager.login_message = 'Lütfen giriş yapın.'
+login_manager.login_message_category = 'info'
 ai = FiberArizaAI()
 insights = ai.generate_dashboard_insights()
 OLLAMA_URL = "http://localhost:11434"
@@ -75,6 +90,111 @@ class FiberAriza(db.Model):
     otdr_olcum_bilgileri = db.Column(db.Text)
     etkilenen_servis_bilgileri = db.Column(db.Text)  # Bu eksikti!
     yil = db.Column(db.String(10))
+
+# Authentication Models
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(50), default='bayi_user')  # super_admin, admin, karel_user, bayi_user
+    region = db.Column(db.String(50))  # Bursa, Kocaeli, etc.
+    active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_login = db.Column(db.DateTime)
+    
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+    
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+    
+    def is_admin(self):
+        return self.role in ['super_admin', 'admin']
+    
+    def is_super_admin(self):
+        return self.role == 'super_admin'
+    
+    def can_access_region(self, region):
+        if self.is_super_admin():
+            return True
+        return self.region == region or self.role == 'admin'
+    
+    def __repr__(self):
+        return f'<User {self.username}>'
+
+class Region(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    code = db.Column(db.String(10), unique=True, nullable=False)
+    active = db.Column(db.Boolean, default=True)
+    
+    def __repr__(self):
+        return f'<Region {self.name}>'
+
+
+# User loader for Flask-Login
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# Role-based access control decorators
+def admin_required(f):
+    """Decorator to require admin or super_admin role"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
+        if not current_user.is_admin():
+            flash('Bu sayfaya erişim yetkiniz yok', 'error')
+            return redirect(url_for('home'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def super_admin_required(f):
+    """Decorator to require super_admin role"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
+        if not current_user.is_super_admin():
+            flash('Bu sayfaya erişim yetkiniz yok', 'error')
+            return redirect(url_for('home'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def karel_required(f):
+    """Decorator to require karel_user, admin or super_admin role"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
+        if current_user.role not in ['karel_user', 'admin', 'super_admin']:
+            flash('Bu sayfaya erişim yetkiniz yok', 'error')
+            return redirect(url_for('home'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def region_access_required(f):
+    """Decorator to check region-based access"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
+        
+        # Super admin can access everything
+        if current_user.is_super_admin():
+            return f(*args, **kwargs)
+        
+        # Get region from URL parameters or form data
+        target_region = request.args.get('region') or request.form.get('region')
+        
+        if target_region and not current_user.can_access_region(target_region):
+            flash('Bu bölgedeki verilere erişim yetkiniz yok', 'error')
+            return redirect(url_for('home'))
+        
+        return f(*args, **kwargs)
+    return decorated_function
 
 class PlaygroundModule(db.Model):
     """Kullanıcı tarafından oluşturulan modüller"""
@@ -126,6 +246,9 @@ def parse_utc_date(date_string):
         return datetime.fromisoformat(date_string)
 
 @app.route('/api/ariza/delete_all', methods=['DELETE'])
+@login_required
+@admin_required
+@log_request_response
 def api_delete_all_arizalar():
     try:
         # Güvenlik için toplam kayıt sayısını kontrol et
@@ -135,16 +258,61 @@ def api_delete_all_arizalar():
         FiberAriza.query.delete()
         db.session.commit()
         
+        log_database_operation('DELETE_ALL', 'FiberAriza', record_id=None, data={'total_deleted': total})
+        log_user_action('delete_all_faults', details={'total_deleted': total})
+        logger.info(f"Tüm arıza kayıtları silindi: {total} kayıt")
+        
         return jsonify({
             'status': 'ok', 
             'message': f'{total} kayıt başarıyla silindi'
         })
     except Exception as e:
         db.session.rollback()
+        logger.error(f"Arıza kayıtları silinirken hata oluştu: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 400
+
+# Authentication Routes
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        user = User.query.filter_by(username=username).first()
+        
+        if user and user.check_password(password) and user.active:
+            login_user(user, remember=True)
+            user.last_login = datetime.utcnow()
+            db.session.commit()
+            
+            log_user_action('user_login', user_id=user.id, details={'username': username})
+            logger.info(f"Kullanıcı giriş yaptı: {username}")
+            
+            next_page = request.args.get('next')
+            return redirect(next_page) if next_page else redirect(url_for('home'))
+        else:
+            flash('Kullanıcı adı veya şifre hatalı', 'error')
+            log_user_action('failed_login_attempt', details={'username': username})
+    
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    username = current_user.username
+    log_user_action('user_logout', user_id=current_user.id, details={'username': username})
+    logger.info(f"Kullanıcı çıkış yaptı: {username}")
+    logout_user()
+    flash('Başarıyla çıkış yaptınız', 'success')
+    return redirect(url_for('login'))
 
 @app.route('/')
 def home():
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
     return redirect(url_for('browse'))
 
 @app.route('/api/ai_insights')
@@ -153,6 +321,7 @@ def api_ai_insights():
 
 @app.route('/browse/')
 @app.route('/browse/<path:subpath>')
+@login_required
 def browse(subpath=''):
     try:
         # Güvenlik kontrolü
@@ -202,6 +371,7 @@ def browse(subpath=''):
         return redirect(url_for('browse'))
 
 @app.route('/upload_file', methods=['POST'])
+@log_request_response
 def upload_file():
     if 'file' not in request.files:
         flash('Dosya seçilmedi', 'error')
@@ -216,8 +386,20 @@ def upload_file():
     target_path = os.path.join(BASE_DIR, current_path)
     
     if file:
-        file.save(os.path.join(target_path, file.filename))
-        flash('Dosya başarıyla yüklendi', 'success')
+        try:
+            file_path = os.path.join(target_path, file.filename)
+            file.save(file_path)
+            file_size = os.path.getsize(file_path)
+            
+            log_file_operation('UPLOAD', file.filename, size=file_size, success=True)
+            log_user_action('file_upload', details={'filename': file.filename, 'size': file_size, 'path': current_path})
+            logger.info(f"Dosya yüklendi: {file.filename} ({file_size} bytes)")
+            
+            flash('Dosya başarıyla yüklendi', 'success')
+        except Exception as e:
+            log_file_operation('UPLOAD', file.filename, success=False, error=str(e))
+            logger.error(f"Dosya yükleme hatası: {file.filename} - {str(e)}", exc_info=True)
+            flash(f'Dosya yükleme hatası: {str(e)}', 'error')
     
     return redirect(request.referrer)
 
@@ -1511,5 +1693,175 @@ def api_import_playground_data(module_name):
         db.session.rollback()
         return jsonify({'error': str(e)}), 400
 
+@app.route('/api/log', methods=['POST'])
+@log_request_response
+def api_frontend_log():
+    """Frontend logging endpoint"""
+    try:
+        log_data = request.get_json()
+        if not log_data:
+            return jsonify({'error': 'No log data provided'}), 400
+        
+        level = log_data.get('level', 'INFO').upper()
+        message = log_data.get('message', 'Frontend log')
+        data = {k: v for k, v in log_data.items() if k not in ['level', 'message']}
+        
+        frontend_logger = logging.getLogger('frontend')
+        
+        if level == 'ERROR':
+            frontend_logger.error(f"Frontend: {message}", extra=data)
+        elif level == 'WARNING':
+            frontend_logger.warning(f"Frontend: {message}", extra=data)
+        else:
+            frontend_logger.info(f"Frontend: {message}", extra=data)
+        
+        return jsonify({'status': 'logged'}), 200
+        
+    except Exception as e:
+        logger.error(f"Frontend logging endpoint error: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Logging failed'}), 500
+
+# Admin Panel Routes
+@app.route('/admin')
+@login_required
+@admin_required
+def admin_panel():
+    """Admin panel main page"""
+    users = User.query.all()
+    regions = Region.query.filter_by(active=True).all()
+    
+    # Statistics
+    stats = {
+        'total_users': User.query.count(),
+        'active_users': User.query.filter_by(active=True).count(),
+        'total_regions': Region.query.count(),
+        'total_faults': FiberAriza.query.count(),
+        'admin_users': User.query.filter(User.role.in_(['admin', 'super_admin'])).count()
+    }
+    
+    return render_template('admin_panel.html', users=users, regions=regions, stats=stats)
+
+@app.route('/admin/users')
+@login_required
+@admin_required
+def admin_users():
+    """User management page"""
+    users = User.query.all()
+    regions = Region.query.filter_by(active=True).all()
+    return render_template('admin_users.html', users=users, regions=regions)
+
+@app.route('/admin/user/create', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_create_user():
+    """Create new user"""
+    if request.method == 'POST':
+        try:
+            username = request.form['username']
+            email = request.form['email']
+            password = request.form['password']
+            role = request.form['role']
+            region = request.form.get('region')
+            
+            # Check if user exists
+            if User.query.filter_by(username=username).first():
+                flash('Bu kullanıcı adı zaten mevcut', 'error')
+                return redirect(url_for('admin_create_user'))
+            
+            if User.query.filter_by(email=email).first():
+                flash('Bu e-posta adresi zaten mevcut', 'error')
+                return redirect(url_for('admin_create_user'))
+            
+            # Create user
+            user = User(
+                username=username,
+                email=email,
+                role=role,
+                region=region if region else None,
+                active=True,
+                created_at=datetime.utcnow()
+            )
+            user.set_password(password)
+            
+            db.session.add(user)
+            db.session.commit()
+            
+            log_user_action('admin_create_user', user_id=current_user.id, 
+                           details={'created_user': username, 'role': role})
+            logger.info(f"Admin {current_user.username} created user: {username}")
+            
+            flash(f'Kullanıcı {username} başarıyla oluşturuldu', 'success')
+            return redirect(url_for('admin_users'))
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"User creation error: {str(e)}", exc_info=True)
+            flash(f'Kullanıcı oluşturulurken hata: {str(e)}', 'error')
+    
+    regions = Region.query.filter_by(active=True).all()
+    return render_template('admin_create_user.html', regions=regions)
+
+@app.route('/admin/user/<int:user_id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_edit_user(user_id):
+    """Edit user"""
+    user = User.query.get_or_404(user_id)
+    
+    if request.method == 'POST':
+        try:
+            user.email = request.form['email']
+            user.role = request.form['role']
+            user.region = request.form.get('region')
+            user.active = 'active' in request.form
+            
+            # Update password if provided
+            new_password = request.form.get('password')
+            if new_password:
+                user.set_password(new_password)
+            
+            db.session.commit()
+            
+            log_user_action('admin_edit_user', user_id=current_user.id,
+                           details={'edited_user': user.username})
+            
+            flash(f'Kullanıcı {user.username} güncellendi', 'success')
+            return redirect(url_for('admin_users'))
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"User edit error: {str(e)}", exc_info=True)
+            flash(f'Kullanıcı güncellenirken hata: {str(e)}', 'error')
+    
+    regions = Region.query.filter_by(active=True).all()
+    return render_template('admin_edit_user.html', user=user, regions=regions)
+
+@app.route('/admin/user/<int:user_id>/delete', methods=['POST'])
+@login_required
+@super_admin_required  # Only super admin can delete users
+def admin_delete_user(user_id):
+    """Delete user"""
+    user = User.query.get_or_404(user_id)
+    
+    if user.id == current_user.id:
+        flash('Kendi hesabınızı silemezsiniz', 'error')
+        return redirect(url_for('admin_users'))
+    
+    try:
+        username = user.username
+        db.session.delete(user)
+        db.session.commit()
+        
+        log_user_action('admin_delete_user', user_id=current_user.id,
+                       details={'deleted_user': username})
+        
+        flash(f'Kullanıcı {username} silindi', 'success')
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"User deletion error: {str(e)}", exc_info=True)
+        flash(f'Kullanıcı silinirken hata: {str(e)}', 'error')
+    
+    return redirect(url_for('admin_users'))
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5001)

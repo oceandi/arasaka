@@ -11,6 +11,8 @@ from typing import Dict, List, Any, Optional
 import requests
 from datetime import datetime, timedelta
 import os
+import logging
+from logging_config import log_ai_operation
 
 class FiberArizaAI:
     def __init__(self, model_type: str = "deepseek-r1", api_key: Optional[str] = None):
@@ -24,6 +26,7 @@ class FiberArizaAI:
         self.model_type = model_type
         self.api_key = api_key or os.getenv(f"{model_type.upper()}_API_KEY")
         self.ml_data_path = "ml_data"
+        self.logger = logging.getLogger('ai_integration')
         
     def load_data(self) -> Dict[str, pd.DataFrame]:
         """ML verilerini yükle"""

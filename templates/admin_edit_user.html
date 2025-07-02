@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kullanıcı Düzenle - KAREL Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #f8fafc;
+            color: #334155;
+        }
+        
+        .admin-header {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .admin-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .admin-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .admin-title h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #94a3b8;
+            font-size: 0.875rem;
+        }
+        
+        .breadcrumb a {
+            color: #94a3b8;
+            text-decoration: none;
+        }
+        
+        .breadcrumb a:hover {
+            color: white;
+        }
+        
+        .logout-btn {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .form-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+        
+        .form-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 2rem;
+            margin: 0 auto 1rem;
+        }
+        
+        .form-title {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-subtitle {
+            color: #64748b;
+            font-size: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #374151;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f9fafb;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: #f1f5f9;
+            border-radius: 12px;
+            border: 2px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        
+        .checkbox-group:hover {
+            border-color: #3b82f6;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+        
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .password-section {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border-left: 4px solid #f59e0b;
+            margin-bottom: 1.5rem;
+        }
+        
+        .password-section h3 {
+            color: #1e293b;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .password-note {
+            color: #64748b;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            flex: 1;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+        
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .alert-success {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .alert-error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .form-card {
+                padding: 1.5rem;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="admin-header">
+        <nav class="admin-nav">
+            <div class="admin-title">
+                <i class="fas fa-user-edit"></i>
+                <div>
+                    <h1>Kullanıcı Düzenle</h1>
+                    <div class="breadcrumb">
+                        <a href="{{ url_for('admin_panel') }}">Admin Panel</a>
+                        <i class="fas fa-chevron-right"></i>
+                        <a href="{{ url_for('admin_users') }}">Kullanıcılar</a>
+                        <i class="fas fa-chevron-right"></i>
+                        <span>{{ user.username }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-user">
+                <a href="{{ url_for('logout') }}" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Çıkış
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-triangle' }}"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="form-card">
+            <div class="form-header">
+                <div class="user-avatar">
+                    {{ user.username[0].upper() }}
+                </div>
+                <h1 class="form-title">{{ user.username }} Düzenle</h1>
+                <p class="form-subtitle">Kullanıcı bilgilerini ve yetkilerini güncelleyin</p>
+            </div>
+
+            <form method="POST">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="username">Kullanıcı Adı</label>
+                        <input type="text" id="username" value="{{ user.username }}" disabled 
+                               style="background: #f3f4f6; color: #6b7280;">
+                        <small style="color: #6b7280; font-size: 0.8rem;">Kullanıcı adı değiştirilemez</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">E-posta Adresi *</label>
+                        <input type="email" id="email" name="email" value="{{ user.email }}" required>
+                    </div>
+                </div>
+
+                <div class="password-section">
+                    <h3>
+                        <i class="fas fa-key"></i>
+                        Şifre Güncelleme
+                    </h3>
+                    <p class="password-note">
+                        Şifreyi değiştirmek istiyorsanız yeni şifreyi girin. Boş bırakırsanız mevcut şifre korunur.
+                    </p>
+                    <div class="form-group">
+                        <label for="password">Yeni Şifre</label>
+                        <input type="password" id="password" name="password" 
+                               placeholder="Yeni şifre (opsiyonel)">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="role">Kullanıcı Rolü *</label>
+                        <select id="role" name="role" required>
+                            <option value="super_admin" {{ 'selected' if user.role == 'super_admin' }}>Super Admin</option>
+                            <option value="admin" {{ 'selected' if user.role == 'admin' }}>Admin</option>
+                            <option value="karel_user" {{ 'selected' if user.role == 'karel_user' }}>Karel Kullanıcısı</option>
+                            <option value="bayi_user" {{ 'selected' if user.role == 'bayi_user' }}>Bayi Kullanıcısı</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="region">Bölge</label>
+                        <select id="region" name="region">
+                            <option value="" {{ 'selected' if not user.region }}>Tüm Bölgeler</option>
+                            {% for region in regions %}
+                            <option value="{{ region.name }}" {{ 'selected' if user.region == region.name }}>{{ region.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="active" name="active" {{ 'checked' if user.active }}>
+                        <label for="active">
+                            <i class="fas fa-{{ 'toggle-on' if user.active else 'toggle-off' }}"></i>
+                            Kullanıcı Aktif
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i>
+                        İptal
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        Değişiklikleri Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        // Toggle checkbox icon
+        document.getElementById('active').addEventListener('change', function() {
+            const icon = this.parentElement.querySelector('i');
+            if (this.checked) {
+                icon.className = 'fas fa-toggle-on';
+            } else {
+                icon.className = 'fas fa-toggle-off';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yeni Kullanıcı Ekle - KAREL Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #f8fafc;
+            color: #334155;
+        }
+        
+        .admin-header {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .admin-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .admin-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .admin-title h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #94a3b8;
+            font-size: 0.875rem;
+        }
+        
+        .breadcrumb a {
+            color: #94a3b8;
+            text-decoration: none;
+        }
+        
+        .breadcrumb a:hover {
+            color: white;
+        }
+        
+        .logout-btn {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .form-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+        
+        .form-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .form-title {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-subtitle {
+            color: #64748b;
+            font-size: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #374151;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f9fafb;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .role-info {
+            background: #f1f5f9;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: #475569;
+        }
+        
+        .password-strength {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .strength-weak {
+            color: #ef4444;
+        }
+        
+        .strength-medium {
+            color: #f59e0b;
+        }
+        
+        .strength-strong {
+            color: #16a34a;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            flex: 1;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+        
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .alert-error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .form-card {
+                padding: 1.5rem;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="admin-header">
+        <nav class="admin-nav">
+            <div class="admin-title">
+                <i class="fas fa-user-plus"></i>
+                <div>
+                    <h1>Yeni Kullanıcı Ekle</h1>
+                    <div class="breadcrumb">
+                        <a href="{{ url_for('admin_panel') }}">Admin Panel</a>
+                        <i class="fas fa-chevron-right"></i>
+                        <a href="{{ url_for('admin_users') }}">Kullanıcılar</a>
+                        <i class="fas fa-chevron-right"></i>
+                        <span>Yeni Kullanıcı</span>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-user">
+                <a href="{{ url_for('logout') }}" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Çıkış
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="form-card">
+            <div class="form-header">
+                <h1 class="form-title">Yeni Kullanıcı Oluştur</h1>
+                <p class="form-subtitle">Sisteme yeni bir kullanıcı ekleyin ve gerekli yetkileri verin</p>
+            </div>
+
+            <form method="POST">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="username">Kullanıcı Adı *</label>
+                        <input type="text" id="username" name="username" required 
+                               placeholder="Örn: karel_ankara">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">E-posta Adresi *</label>
+                        <input type="email" id="email" name="email" required 
+                               placeholder="Örn: kullanici@karel.com.tr">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Şifre *</label>
+                    <input type="password" id="password" name="password" required 
+                           placeholder="Güçlü bir şifre oluşturun" onkeyup="checkPasswordStrength()">
+                    <div id="password-strength" class="password-strength"></div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="role">Kullanıcı Rolü *</label>
+                        <select id="role" name="role" required onchange="showRoleInfo()">
+                            <option value="">Rol seçin</option>
+                            <option value="super_admin">Super Admin</option>
+                            <option value="admin">Admin</option>
+                            <option value="karel_user">Karel Kullanıcısı</option>
+                            <option value="bayi_user">Bayi Kullanıcısı</option>
+                        </select>
+                        <div id="role-info" class="role-info" style="display: none;"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="region">Bölge</label>
+                        <select id="region" name="region">
+                            <option value="">Tüm Bölgeler</option>
+                            {% for region in regions %}
+                            <option value="{{ region.name }}">{{ region.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i>
+                        İptal
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        Kullanıcı Oluştur
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        function checkPasswordStrength() {
+            const password = document.getElementById('password').value;
+            const strengthDiv = document.getElementById('password-strength');
+            
+            if (password.length === 0) {
+                strengthDiv.innerHTML = '';
+                return;
+            }
+            
+            let strength = 0;
+            if (password.length >= 8) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[a-z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^A-Za-z0-9]/.test(password)) strength++;
+            
+            if (strength < 3) {
+                strengthDiv.innerHTML = '<span class="strength-weak">Zayıf şifre - Daha güçlü bir şifre kullanın</span>';
+            } else if (strength < 4) {
+                strengthDiv.innerHTML = '<span class="strength-medium">Orta güçlü şifre</span>';
+            } else {
+                strengthDiv.innerHTML = '<span class="strength-strong">Güçlü şifre ✓</span>';
+            }
+        }
+        
+        function showRoleInfo() {
+            const role = document.getElementById('role').value;
+            const infoDiv = document.getElementById('role-info');
+            
+            const roleDescriptions = {
+                'super_admin': 'Sistem yöneticisi - Tüm yetkiler ve tüm bölgelere erişim',
+                'admin': 'Bölge yöneticisi - Kendi bölgesindeki tüm yetkiler',
+                'karel_user': 'Karel personeli - Teknik işlemler ve veri girişi',
+                'bayi_user': 'Bayi kullanıcısı - Sınırlı erişim ve görüntüleme'
+            };
+            
+            if (role && roleDescriptions[role]) {
+                infoDiv.innerHTML = roleDescriptions[role];
+                infoDiv.style.display = 'block';
+            } else {
+                infoDiv.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

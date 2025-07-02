@@ -445,7 +445,25 @@
                 <li><a href="/browse"><i class="fas fa-arrow-left"></i> Ana Menüye Dön</a></li>
                 <li><a href="#" class="active"><i class="fas fa-puzzle-piece"></i> Modüllerim</a></li>
                 <li><a href="#" onclick="showCreateModule()"><i class="fas fa-plus"></i> Yeni Modül</a></li>
+                {% if current_user.is_admin() %}
+                <li><a href="/admin"><i class="fas fa-shield-alt"></i> Admin Panel</a></li>
+                {% endif %}
             </ul>
+        </div>
+        
+        <div class="user-section" style="padding: 0 20px 20px; border-top: 1px solid #475569; margin-top: auto;">
+            <div class="user-info" style="display: flex; align-items: center; gap: 10px; padding: 12px 0; color: #f8fafc;">
+                <div class="user-avatar" style="width: 35px; height: 35px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #3b82f6); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;">
+                    {{ current_user.username[0].upper() }}
+                </div>
+                <div class="user-details">
+                    <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 2px;">{{ current_user.username }}</h4>
+                    <p style="font-size: 11px; color: #3b82f6;">{{ current_user.role.replace('_', ' ').title() }}</p>
+                </div>
+            </div>
+            <a href="{{ url_for('logout') }}" style="width: 100%; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 12px; font-weight: 600; text-align: center; transition: all 0.3s ease; display: block; margin-top: 10px;">
+                <i class="fas fa-sign-out-alt"></i> Çıkış Yap
+            </a>
         </div>
     </div>
     
