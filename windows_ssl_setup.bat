@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 REM ============================================================================
 REM Windows HTTPS Production Setup for maintence.com.tr
 REM M.S.P - Maintenance Solution Partner
@@ -6,45 +7,55 @@ REM ============================================================================
 
 echo.
 echo ============================================================================
-echo  🚀 M.S.P HTTPS Production Setup for Windows Server
-echo  Domain: maintence.com.tr
-echo  IP: 85.105.220.36
+echo   M.S.P HTTPS Production Setup for Windows Server
+echo   Domain: maintence.com.tr
+echo   IP: 85.105.220.36
 echo ============================================================================
 echo.
 
 REM Check if running as Administrator
 net session >nul 2>&1
 if %errorLevel% neq 0 (
-    echo ❌ Bu script Administrator olarak çalıştırılmalı!
-    echo Sağ tık yapıp "Administrator olarak çalıştır" seçin.
+    echo [ERROR] Bu script Administrator olarak calistirilmali!
+    echo Sag tik yapip "Administrator olarak calistir" secin.
     pause
     exit /b 1
 )
 
-echo ✅ Administrator yetkisi doğrulandı.
+echo [OK] Administrator yetkisi dogrulandi.
 echo.
 
 REM Create SSL directory
-echo 📁 SSL klasörü oluşturuluyor...
+echo [INFO] SSL klasoru olusturuluyor...
 if not exist "C:\ssl" mkdir "C:\ssl"
 if not exist "C:\ssl\maintence.com.tr" mkdir "C:\ssl\maintence.com.tr"
-echo ✅ SSL klasörleri oluşturuldu: C:\ssl\maintence.com.tr\
+echo [OK] SSL klasorleri olusturuldu: C:\ssl\maintence.com.tr\
+echo.
+
+REM Show current directory
+echo [INFO] Mevcut klasor: %CD%
+echo [INFO] Bu klasordeki dosyalar:
+dir /b *.py 2>nul
 echo.
 
 REM Check if Python is installed
-echo 🐍 Python kontrolü...
+echo [INFO] Python kontrolu...
 python --version >nul 2>&1
 if %errorLevel% neq 0 (
-    echo ❌ Python bulunamadı! Python 3.12+ yükleyin.
+    echo [ERROR] Python bulunamadi! Python 3.12+ yukleyin.
     echo https://www.python.org/downloads/
     pause
     exit /b 1
 )
-echo ✅ Python bulundu.
+echo [OK] Python bulundu.
 
 REM Check if we're in the correct directory
 if not exist "app.py" (
-    echo ❌ Yanlış klasör! Bu scripti arasaka klasöründe çalıştırın.
+    echo [ERROR] app.py bulunamadi!
+    echo [INFO] Bu scripti proje klasorunde calistirin.
+    echo [INFO] Proje klasorunde su dosyalar olmali: app.py, init_users.py
+    echo.
+    echo Devam etmek icin proje klasorune gidin ve scripti tekrar calistirin.
     pause
     exit /b 1
 )
