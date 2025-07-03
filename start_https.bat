@@ -1,6 +1,6 @@
 @echo off
 REM ============================================================================
-REM Quick HTTPS Start for maintence.com.tr
+REM Quick HTTPS Start for maintencesp.com.tr
 REM Bu dosyayı SSL sertifikası kurduktan sonra kullanın
 REM ============================================================================
 
@@ -9,7 +9,7 @@ title M.S.P - Maintenance Solution Partner (HTTPS)
 echo.
 echo ============================================================================
 echo  🚀 M.S.P HTTPS Server Starting...
-echo  Domain: maintence.com.tr
+echo  Domain: maintencesp.com.tr
 echo ============================================================================
 echo.
 
@@ -21,17 +21,17 @@ if %errorLevel% neq 0 (
     exit /b 1
 )
 
-REM Check SSL certificates
-if not exist "C:\ssl\maintence.com.tr\fullchain.pem" (
+REM Check SSL certificates - DÜZELTILDI!
+if not exist "C:\ssl\maintencesp.com.tr\fullchain.pem" (
     echo ❌ SSL sertifikası bulunamadı!
-    echo Önce windows_ssl_setup.bat çalıştırın.
+    echo Beklenen: C:\ssl\maintencesp.com.tr\fullchain.pem
     pause
     exit /b 1
 )
 
-if not exist "C:\ssl\maintence.com.tr\privkey.pem" (
+if not exist "C:\ssl\maintencesp.com.tr\privkey.pem" (
     echo ❌ SSL private key bulunamadı!
-    echo Önce windows_ssl_setup.bat çalıştırın.
+    echo Beklenen: C:\ssl\maintencesp.com.tr\privkey.pem
     pause
     exit /b 1
 )
@@ -39,11 +39,11 @@ if not exist "C:\ssl\maintence.com.tr\privkey.pem" (
 REM Activate virtual environment
 call venv\Scripts\activate.bat
 
-REM Set production environment
+REM Set production environment - DÜZELTILDI!
 set FLASK_ENV=production
 set FLASK_APP=app.py
-set SSL_CERT_PATH=C:\ssl\maintence.com.tr\fullchain.pem
-set SSL_KEY_PATH=C:\ssl\maintence.com.tr\privkey.pem
+set SSL_CERT_PATH=C:\ssl\maintencesp.com.tr\fullchain.pem
+set SSL_KEY_PATH=C:\ssl\maintencesp.com.tr\privkey.pem
 set PORT=443
 set HOST=0.0.0.0
 
@@ -55,13 +55,16 @@ echo 🌐 HTTPS Server başlatılıyor...
 echo.
 echo ============================================================================
 echo  📡 Erişim Bilgileri:
-echo  - HTTPS: https://maintence.com.tr
+echo  - HTTPS: https://maintencesp.com.tr
 echo  - IP: https://85.105.220.36
 echo  - Port: 443 (HTTPS)
 echo ============================================================================
 echo.
 echo ⚠️  Durdurmak için CTRL+C
 echo.
+
+REM Create logs directory if not exists
+if not exist "logs" mkdir "logs"
 
 REM Start with Gunicorn
 gunicorn --bind 0.0.0.0:443 ^
