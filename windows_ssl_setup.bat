@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
 REM ============================================================================
-REM Windows HTTPS Production Setup for maintence.com.tr
+REM Windows HTTPS Production Setup for maintencesp.com.tr
 REM M.S.P - Maintenance Solution Partner
 REM ============================================================================
 
@@ -11,7 +11,7 @@ cd /d "%~dp0"
 echo.
 echo ============================================================================
 echo   M.S.P HTTPS Production Setup for Windows Server
-echo   Domain: maintence.com.tr
+echo   Domain: maintencesp.com.tr
 echo   IP: 85.105.220.36
 echo ============================================================================
 echo.
@@ -31,8 +31,8 @@ echo.
 REM Create SSL directory
 echo [INFO] SSL klasoru olusturuluyor...
 if not exist "C:\ssl" mkdir "C:\ssl"
-if not exist "C:\ssl\maintence.com.tr" mkdir "C:\ssl\maintence.com.tr"
-echo [OK] SSL klasorleri olusturuldu: C:\ssl\maintence.com.tr\
+if not exist "C:\ssl\maintencesp.com.tr" mkdir "C:\ssl\maintencesp.com.tr"
+echo [OK] SSL klasorleri olusturuldu: C:\ssl\maintencesp.com.tr\
 echo.
 
 REM Show current directory
@@ -134,8 +134,8 @@ echo 1. https://www.win-acme.com/ adresinden Win-ACME indirin
 echo 2. wacs.exe yi Administrator olarak calistirin
 echo 3. "N" (Create certificate) secin
 echo 4. "1" (Single binding of an IIS site) veya "4" (Manually input host names) secin
-echo 5. Domain: maintence.com.tr
-echo 6. Sertifika C:\ssl\maintence.com.tr\ klasorune kopyalanacak
+echo 5. Domain: maintencesp.com.tr
+echo 6. Sertifika C:\ssl\maintencesp.com.tr\ klasorune kopyalanacak
 echo.
 echo Win-ACME kurulumu tamamlandiktan sonra bu scripti tekrar calistirin.
 echo.
@@ -145,16 +145,16 @@ exit /b 0
 :existing_cert
 echo.
 echo [INFO] Mevcut Sertifika Kontrolu:
-if exist "C:\ssl\maintence.com.tr\fullchain.pem" (
-    if exist "C:\ssl\maintence.com.tr\privkey.pem" (
+if exist "C:\ssl\maintencesp.com.tr\fullchain.pem" (
+    if exist "C:\ssl\maintencesp.com.tr\privkey.pem" (
         echo [OK] SSL sertifikalari bulundu!
         goto :start_production
     )
 )
 echo [ERROR] SSL sertifikalari bulunamadi!
 echo Sertifika dosyalarini su konuma kopyalayin:
-echo   C:\ssl\maintence.com.tr\fullchain.pem
-echo   C:\ssl\maintence.com.tr\privkey.pem
+echo   C:\ssl\maintencesp.com.tr\fullchain.pem
+echo   C:\ssl\maintencesp.com.tr\privkey.pem
 echo.
 pause
 exit /b 1
@@ -174,7 +174,7 @@ echo ===========================================================================
 echo  [WEB] Uygulama Erisim Bilgileri:
 echo  - Local: http://127.0.0.1:5001
 echo  - Network: http://85.105.220.36:5000
-echo  - Domain: http://maintence.com.tr (DNS ayarlari sonrasi)
+echo  - Domain: http://maintencesp.com.tr (DNS ayarlari sonrasi)
 echo ============================================================================
 echo.
 echo [WARN] CTRL+C ile durdurmak icin
@@ -191,8 +191,8 @@ echo.
 REM Set environment variables
 set FLASK_ENV=production
 set FLASK_APP=app.py
-set SSL_CERT_PATH=C:\ssl\maintence.com.tr\fullchain.pem
-set SSL_KEY_PATH=C:\ssl\maintence.com.tr\privkey.pem
+set SSL_CERT_PATH=C:\ssl\maintencesp.com.tr\fullchain.pem
+set SSL_KEY_PATH=C:\ssl\maintencesp.com.tr\privkey.pem
 set PORT=443
 set HOST=0.0.0.0
 
@@ -200,7 +200,7 @@ echo [INFO] Gunicorn ile baslatiliyor...
 echo.
 echo ============================================================================
 echo  [HTTPS] HTTPS Uygulama Erisim Bilgileri:
-echo  - HTTPS: https://maintence.com.tr
+echo  - HTTPS: https://maintencesp.com.tr
 echo  - IP: https://85.105.220.36
 echo  - SSL: Let's Encrypt (Otomatik yenileme)
 echo ============================================================================
