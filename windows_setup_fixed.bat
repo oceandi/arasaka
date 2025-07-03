@@ -5,6 +5,9 @@ REM Windows HTTPS Production Setup for maintence.com.tr
 REM M.S.P - Maintenance Solution Partner
 REM ============================================================================
 
+REM Change to script directory
+cd /d "%~dp0"
+
 echo.
 echo ============================================================================
 echo   M.S.P HTTPS Production Setup for Windows Server

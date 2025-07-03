@@ -5,6 +5,9 @@ REM Windows HTTPS Production Setup for maintence.com.tr
 REM M.S.P - Maintenance Solution Partner
 REM ============================================================================
 
+REM Change to script directory
+cd /d "%~dp0"
+
 echo.
 echo ============================================================================
 echo   M.S.P HTTPS Production Setup for Windows Server
@@ -61,45 +64,45 @@ if not exist "app.py" (
 )
 
 REM Activate virtual environment
-echo 🔧 Virtual environment aktifleştiriliyor...
+echo [INFO] Virtual environment aktifleştiriliyor...
 if not exist "venv" (
-    echo ⚠️  Virtual environment bulunamadı, oluşturuluyor...
+    echo [WARN] Virtual environment bulunamadi, olusturuluyor...
     python -m venv venv
 )
 
 call venv\Scripts\activate.bat
 if %errorLevel% neq 0 (
-    echo ❌ Virtual environment aktifleştirilemedi!
+    echo [ERROR] Virtual environment aktiflestirilemedi!
     pause
     exit /b 1
 )
-echo ✅ Virtual environment aktif.
+echo [OK] Virtual environment aktif.
 
 REM Install/upgrade required packages
-echo 📦 Gerekli paketler yükleniyor...
+echo [INFO] Gerekli paketler yukleniyor...
 pip install --upgrade pip
 pip install flask flask-sqlalchemy flask-migrate flask-login
 pip install pandas openpyxl simplekml xlsxwriter
 pip install gunicorn
 pip install requests
-echo ✅ Tüm paketler yüklendi.
+echo [OK] Tum paketler yuklendi.
 
 REM Initialize database if needed
-echo 🗄️  Database kontrolü...
+echo [INFO] Database kontrolu...
 if not exist "fiberariza.db" (
-    echo ⚠️  Database bulunamadı, oluşturuluyor...
+    echo [WARN] Database bulunamadi, olusturuluyor...
     python init_users.py
-    echo ✅ Database ve kullanıcılar oluşturuldu.
+    echo [OK] Database ve kullanicilar olusturuldu.
 ) else (
-    echo ✅ Database mevcut.
+    echo [OK] Database mevcut.
 )
 
 REM Firewall rules
-echo 🔥 Windows Firewall kuralları ekleniyor...
+echo [INFO] Windows Firewall kurallari ekleniyor...
 netsh advfirewall firewall add rule name="Flask HTTPS" dir=in action=allow protocol=TCP localport=443 >nul 2>&1
 netsh advfirewall firewall add rule name="Flask HTTP" dir=in action=allow protocol=TCP localport=80 >nul 2>&1
 netsh advfirewall firewall add rule name="Flask Dev" dir=in action=allow protocol=TCP localport=5000 >nul 2>&1
-echo ✅ Firewall kuralları eklendi (port 80, 443, 5000).
+echo [OK] Firewall kurallari eklendi (port 80, 443, 5000).
 
 echo.
 echo ============================================================================
@@ -107,49 +110,49 @@ echo  SSL Sertifikası Kurulumu
 echo ============================================================================
 echo.
 
-echo SSL sertifikası için 3 seçeneğiniz var:
+echo SSL sertifikasi icin 3 seceneginiz var:
 echo.
-echo 1. 🔧 Win-ACME (Let's Encrypt için Windows) - ÖNERİLEN
-echo 2. 📄 Mevcut sertifikayı kullan (zaten varsa)
-echo 3. 🚀 Geliştirme modunda başlat (HTTP, SSL yok)
+echo 1. [TOOL] Win-ACME (Let's Encrypt icin Windows) - ONERILEN
+echo 2. [FILE] Mevcut sertifikayi kullan (zaten varsa)
+echo 3. [DEV] Gelistirme modunda baslat (HTTP, SSL yok)
 echo.
-set /p ssl_choice=Seçiminizi yapın (1/2/3): 
+set /p ssl_choice=Seciminizi yapin (1/2/3): 
 
 if "%ssl_choice%"=="1" goto :win_acme
 if "%ssl_choice%"=="2" goto :existing_cert
 if "%ssl_choice%"=="3" goto :dev_mode
 
-echo ❌ Geçersiz seçim!
+echo [ERROR] Gecersiz secim!
 pause
 exit /b 1
 
 :win_acme
 echo.
-echo 📋 Win-ACME (Let's Encrypt) Kurulumu:
+echo [INFO] Win-ACME (Let's Encrypt) Kurulumu:
 echo.
 echo 1. https://www.win-acme.com/ adresinden Win-ACME indirin
-echo 2. wacs.exe yi Administrator olarak çalıştırın
-echo 3. "N" (Create certificate) seçin
-echo 4. "1" (Single binding of an IIS site) veya "4" (Manually input host names) seçin
+echo 2. wacs.exe yi Administrator olarak calistirin
+echo 3. "N" (Create certificate) secin
+echo 4. "1" (Single binding of an IIS site) veya "4" (Manually input host names) secin
 echo 5. Domain: maintence.com.tr
-echo 6. Sertifika C:\ssl\maintence.com.tr\ klasörüne kopyalanacak
+echo 6. Sertifika C:\ssl\maintence.com.tr\ klasorune kopyalanacak
 echo.
-echo Win-ACME kurulumu tamamlandıktan sonra bu scripti tekrar çalıştırın.
+echo Win-ACME kurulumu tamamlandiktan sonra bu scripti tekrar calistirin.
 echo.
 pause
 exit /b 0
 
 :existing_cert
 echo.
-echo 📄 Mevcut Sertifika Kontrolü:
+echo [INFO] Mevcut Sertifika Kontrolu:
 if exist "C:\ssl\maintence.com.tr\fullchain.pem" (
     if exist "C:\ssl\maintence.com.tr\privkey.pem" (
-        echo ✅ SSL sertifikaları bulundu!
+        echo [OK] SSL sertifikalari bulundu!
         goto :start_production
     )
 )
-echo ❌ SSL sertifikaları bulunamadı!
-echo Sertifika dosyalarını şu konuma kopyalayın:
+echo [ERROR] SSL sertifikalari bulunamadi!
+echo Sertifika dosyalarini su konuma kopyalayin:
 echo   C:\ssl\maintence.com.tr\fullchain.pem
 echo   C:\ssl\maintence.com.tr\privkey.pem
 echo.
@@ -158,23 +161,23 @@ exit /b 1
 
 :dev_mode
 echo.
-echo 🚀 Geliştirme modunda başlatılıyor (HTTP - Port 5000)...
+echo [DEV] Gelistirme modunda baslatiliyor (HTTP - Port 5000)...
 echo.
 
 REM Set environment variables for development
 set FLASK_ENV=development
 set FLASK_APP=app.py
 
-echo ⚡ Flask uygulaması başlatılıyor...
+echo [INFO] Flask uygulamasi baslatiliyor...
 echo.
 echo ============================================================================
-echo  🌐 Uygulama Erişim Bilgileri:
+echo  [WEB] Uygulama Erisim Bilgileri:
 echo  - Local: http://127.0.0.1:5001
 echo  - Network: http://85.105.220.36:5000
-echo  - Domain: http://maintence.com.tr (DNS ayarları sonrası)
+echo  - Domain: http://maintence.com.tr (DNS ayarlari sonrasi)
 echo ============================================================================
 echo.
-echo ⚠️  CTRL+C ile durdurmak için
+echo [WARN] CTRL+C ile durdurmak icin
 echo.
 
 python app.py
@@ -182,7 +185,7 @@ goto :end
 
 :start_production
 echo.
-echo 🚀 Production modunda başlatılıyor (HTTPS - Port 443)...
+echo [PROD] Production modunda baslatiliyor (HTTPS - Port 443)...
 echo.
 
 REM Set environment variables
@@ -193,21 +196,21 @@ set SSL_KEY_PATH=C:\ssl\maintence.com.tr\privkey.pem
 set PORT=443
 set HOST=0.0.0.0
 
-echo ⚡ Gunicorn ile başlatılıyor...
+echo [INFO] Gunicorn ile baslatiliyor...
 echo.
 echo ============================================================================
-echo  🌐 HTTPS Uygulama Erişim Bilgileri:
+echo  [HTTPS] HTTPS Uygulama Erisim Bilgileri:
 echo  - HTTPS: https://maintence.com.tr
 echo  - IP: https://85.105.220.36
 echo  - SSL: Let's Encrypt (Otomatik yenileme)
 echo ============================================================================
 echo.
-echo ⚠️  CTRL+C ile durdurmak için
+echo [WARN] CTRL+C ile durdurmak icin
 echo.
 
 gunicorn --bind 0.0.0.0:443 --workers 2 --worker-class sync --timeout 30 --keep-alive 2 --certfile="%SSL_CERT_PATH%" --keyfile="%SSL_KEY_PATH%" --ssl-version TLSv1_2 app:app
 
 :end
 echo.
-echo 🎉 M.S.P uygulaması durduruldu.
+echo [INFO] M.S.P uygulamasi durduruldu.
 pause
